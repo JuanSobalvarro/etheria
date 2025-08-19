@@ -5,6 +5,7 @@ Connection::Connection()
 {
     this->value = 0.0;
 }
+
 Connection::~Connection()
 {
 }

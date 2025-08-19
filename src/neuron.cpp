@@ -44,6 +44,11 @@ void Neuron::setInputs(const std::vector<Connection*>& inputs)
     this->inputs = inputs;
 }
 
+ActivationFunction* Neuron::getActivationFunction() const
+{
+    return act_func;
+}
+
 double Neuron::activate()
 {
     if (inputs.empty())
@@ -70,6 +75,13 @@ double Neuron::activate()
     double result = act_func->activate(sum);
     
     this->output->changeValue(result);
-    
+
+    // std::cout << "Neuron activated. Output: " << result << "\n";
+
     return result;
+}
+
+Connection* Neuron::getOutput() const
+{
+    return output;
 }

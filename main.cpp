@@ -1,4 +1,4 @@
-#include "lib/nn/neural_network.hpp"
+#include "neural_network.hpp"
 
 int main() {
     // Example usage of the NeuralNetwork class with Celsius to Fahrenheit conversion

@@ -22,7 +22,11 @@ public:
     double getBias() const;
     std::vector<double> getWeights() const;
 
+    ActivationFunction* getActivationFunction() const;
+
     double activate();
+
+    Connection* getOutput() const;
 
 private:
     std::vector<double> weights;

@@ -16,6 +16,15 @@ public:
     void setWeights(const std::vector<std::vector<double>>& weights);
     void setBiases(const std::vector<double>& biases);
 
+    
+    void setInputs(std::vector<Connection*>& inputs);
+    
+    std::vector<Connection*> getInputs() const;
+    std::vector<double> getInputsValue() const;
+    std::vector<Connection*> getOutputs() const;
+    std::vector<double> getOutputsValue() const;
+    std::vector<Neuron*> getNeurons() const;
+    
     std::vector<double> activate();
 
 private:
@@ -26,7 +35,6 @@ private:
 
     ActivationFunctionType activation_function_type;
 
-    void setInputs(std::vector<Connection*>& inputs);
 };
 
 #endif // LAYER_HPP

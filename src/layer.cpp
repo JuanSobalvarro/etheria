@@ -80,9 +80,51 @@ void Layer::setBiases(const std::vector<double>& biases)
 
 std::vector<double> Layer::activate() 
 {
+    if (neurons.empty()) 
+    {
+        throw std::runtime_error("Layer has no neurons to activate");
+    }
     std::vector<double> outputs;
     for (Neuron* neuron : neurons) {
         outputs.push_back(neuron->activate());
     }
+    
     return outputs;
+}
+
+std::vector<Connection*> Layer::getInputs() const 
+{
+    return inputs;
+}
+
+std::vector<double> Layer::getInputsValue() const 
+{
+    std::vector<double> inputValues;
+    for (Connection* conn : inputs) {
+        inputValues.push_back(conn->getValue());
+    }
+    return inputValues;
+}
+
+std::vector<Connection*> Layer::getOutputs() const 
+{
+    std::vector<Connection*> outputs;
+    for (const Neuron* neuron : neurons) {
+        outputs.push_back(neuron->getOutput());
+    }
+    return outputs;
+}
+
+std::vector<double> Layer::getOutputsValue() const 
+{
+    std::vector<double> outputValues;
+    for (const Neuron* neuron : neurons) {
+        outputValues.push_back(neuron->getOutput()->getValue());
+    }
+    return outputValues;
+}
+
+std::vector<Neuron*> Layer::getNeurons() const
+{
+    return neurons;
 }

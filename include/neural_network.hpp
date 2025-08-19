@@ -14,9 +14,8 @@
 
 
 class NeuralNetwork {
-
 public:
-    NeuralNetwork(int inputSize, int outputSize);
+    NeuralNetwork(int inputSize, const std::vector<int> hiddenLayerSizes, int outputSize, const ActivationFunctionType activationFunctionType);
     ~NeuralNetwork();
     
     std::vector<double> predict(const std::vector<double>& inputs);
@@ -24,10 +23,13 @@ public:
 
     void saveModel(const std::string& filename);
     void loadModel(const std::string& filename);
+
+    void printNeuralNetwork() const;
 private:
-    Layer inputLayer;
-    std::vector<Layer> hiddenLayers;
-    Layer outputLayer;
+    std::vector<Connection*> inputConnections;
+    Layer* inputLayer;
+    std::vector<Layer*> hiddenLayers;
+    Layer* outputLayer;
 };
 
 #endif // NEURAL_NETWORK_H
