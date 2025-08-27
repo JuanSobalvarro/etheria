@@ -16,7 +16,6 @@ public:
     void setWeights(const std::vector<std::vector<double>>& weights);
     void setBiases(const std::vector<double>& biases);
 
-    
     void setInputs(std::vector<Connection*>& inputs);
     
     std::vector<Connection*> getInputs() const;

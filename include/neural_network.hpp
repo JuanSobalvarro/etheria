@@ -20,11 +20,12 @@ public:
     
     std::vector<double> predict(const std::vector<double>& inputs);
     void train(const std::vector<std::vector<double>>& trainingData, const std::vector<std::vector<double>>& labels, int epochs, double learningRate);
+    void test(std::vector<std::vector<double>>& testData, std::vector<std::vector<double>>& testLabels);
 
     void saveModel(const std::string& filename);
     void loadModel(const std::string& filename);
 
-    void printNeuralNetwork() const;
+    void printNeuralNetwork();
 private:
     std::vector<Connection*> inputConnections;
     Layer* inputLayer;

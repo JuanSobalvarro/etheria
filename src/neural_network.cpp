@@ -6,9 +6,9 @@ NeuralNetwork::NeuralNetwork(int inputSize, const std::vector<int> hiddenLayerSi
         throw std::invalid_argument("Input and output sizes must be greater than zero");
     }
 
-    if (hiddenLayerSizes.empty()) {
-        throw std::invalid_argument("Hidden layer sizes must be specified");
-    }
+    // if (hiddenLayerSizes.empty()) {
+    //     throw std::invalid_argument("Hidden layer sizes must be specified");
+    // }
 
     if (activationFunctionType < LINEAR || activationFunctionType > SOFTPLUS) {
         throw std::invalid_argument("Invalid activation function type");
@@ -44,15 +44,21 @@ NeuralNetwork::NeuralNetwork(int inputSize, const std::vector<int> hiddenLayerSi
     }
 
     // Initialize output layer
-    std::vector<Connection*> outputConnections(hiddenLayers.back()->getNeurons().size(), nullptr);
-
-    // Initialize output connections of the output layer
-    for (size_t i = 0; i < outputConnections.size(); i++) {
-        Connection* conn = new Connection();
-        outputConnections[i] = conn;
+    std::vector<Connection*> outputLayerInputs;
+    if (hiddenLayers.empty()) {
+        outputLayerInputs = std::vector<Connection*>(inputLayer->getNeurons().size(), nullptr);
+        for (size_t i = 0; i < inputLayer->getNeurons().size(); i++) {
+            outputLayerInputs[i] = inputLayer->getOutputs()[i];
+        }
+    }
+    else {
+        outputLayerInputs = std::vector<Connection*>(hiddenLayers.back()->getNeurons().size(), nullptr);
+        for (size_t i = 0; i < hiddenLayers.back()->getNeurons().size(); i++) {
+            outputLayerInputs[i] = hiddenLayers.back()->getOutputs()[i];
+        }
     }
 
-    this->outputLayer = new Layer(outputSize, outputConnections, activationFunctionType);
+    this->outputLayer = new Layer(outputSize, outputLayerInputs, activationFunctionType);
 }
 
 NeuralNetwork::~NeuralNetwork() 
@@ -110,21 +116,6 @@ std::vector<double> NeuralNetwork::predict(const std::vector<double>& inputs)
     return outputLayer->getOutputsValue();
 }
 
-/*
-* Each element = how far the prediction is from the target.
-* This is Δoutput for training.
-*/
-std::vector<double> computeOutputErrors(const std::vector<double>& expected, const std::vector<double>& predicted) {
-    if (expected.size() != predicted.size())
-        throw std::invalid_argument("Expected and predicted sizes do not match");
-
-    std::vector<double> errors(expected.size());
-    for (size_t i = 0; i < expected.size(); i++) {
-        errors[i] = expected[i] - predicted[i];  // simple difference
-    }
-    return errors;
-}
-
 
 void NeuralNetwork::train(
     const std::vector<std::vector<double>>& trainingData,
@@ -135,96 +126,104 @@ void NeuralNetwork::train(
     for (int epoch = 0; epoch < epochs; epoch++) {
         double totalError = 0.0;
 
-        for (size_t i = 0; i < trainingData.size(); i++) {
-            std::vector<double> inputs = trainingData[i];
-            std::vector<double> expected = labels[i];
+        for (size_t sampleIdx = 0; sampleIdx < trainingData.size(); sampleIdx++) {
+            std::vector<double> inputs = trainingData[sampleIdx];
+            std::vector<double> expected = labels[sampleIdx];
 
-            // --------- Forward pass ---------
+            // ===== 1. Forward pass =====
             std::vector<double> predicted = predict(inputs);
 
-            // std::cout << "Predicting okay!!!\n";
-
-            // --------- Compute output layer error ---------
-            std::vector<double> outputErrors = computeOutputErrors(expected, predicted);
-
-            // std::cout << "Output errors computed!!!\n";
-
-            // Accumulate total error for monitoring
-            for (double e : outputErrors) totalError += e * e;
-
-            // --------- Backward pass ---------
-
-            // Step 1: Compute output layer deltas
-            std::vector<double> outputDeltas(outputLayer->getNeurons().size());
-            for (size_t j = 0; j < outputLayer->getNeurons().size(); j++) {
-                Neuron* neuron = outputLayer->getNeurons()[j];
-                outputDeltas[j] = outputErrors[j] * neuron->getActivationFunction()->derivative(predicted[j]);
+            // Compute error for RMSE
+            for (size_t j = 0; j < predicted.size(); j++) {
+                double error = predicted[j] - expected[j];
+                totalError += error * error;
             }
 
-            // Step 2: Compute hidden layer deltas (backprop)
-            std::vector<std::vector<double>> hiddenDeltas(hiddenLayers.size());
-            for (int l = hiddenLayers.size() - 1; l >= 0; l--) {
-                Layer* layer = hiddenLayers[l];
-                hiddenDeltas[l].resize(layer->getNeurons().size());
+            // ===== 2. Compute output layer deltas =====
+            for (size_t j = 0; j < outputLayer->getNeurons().size(); j++) {
+                Neuron* neuron = outputLayer->getNeurons()[j];
+                double z = neuron->getZValue(); // pre-activation value
+                double error = predicted[j] - expected[j];
+                // std::cout << "Output Neuron " << j << " - Predicted: " << predicted[j] << ", Expected: " << expected[j] << ", Error: " << error << "\n";
+                neuron->setDelta(error * neuron->getActivationFunction()->derivative(z));
+            }
 
-                for (size_t n = 0; n < layer->getNeurons().size(); n++) {
-                    Neuron* neuron = layer->getNeurons()[n];
-                    double output = neuron->getOutput()->getValue(); // neuron output
+            // ===== 3. Backpropagate hidden layers =====
+            for (int l = (int)hiddenLayers.size() - 1; l >= 0; l--) {
+                Layer* currentLayer = hiddenLayers[l];
+                Layer* nextLayer = (l == (int)hiddenLayers.size() - 1) ? outputLayer : hiddenLayers[l + 1];
+
+                for (size_t j = 0; j < currentLayer->getNeurons().size(); j++) {
+                    Neuron* neuron = currentLayer->getNeurons()[j];
                     double sum = 0.0;
 
-                    if (l == (int)hiddenLayers.size() - 1) {
-                        // last hidden layer, connect to output layer
-                        for (size_t j = 0; j < outputLayer->getNeurons().size(); j++)
-                            sum += outputDeltas[j] * outputLayer->getNeurons()[j]->getWeights()[n];
-                    } else {
-                        // hidden layer connects to next hidden layer
-                        for (size_t j = 0; j < hiddenLayers[l+1]->getNeurons().size(); j++)
-                            sum += hiddenDeltas[l+1][j] * hiddenLayers[l+1]->getNeurons()[j]->getWeights()[n];
+                    for (size_t k = 0; k < nextLayer->getNeurons().size(); k++) {
+                        Neuron* nextNeuron = nextLayer->getNeurons()[k];
+                        sum += nextNeuron->getWeights()[j] * nextNeuron->getDelta();
                     }
 
-                    hiddenDeltas[l][n] = sum * neuron->getActivationFunction()->derivative(output);
+                    double z = neuron->getZValue();
+                    neuron->setDelta(sum * neuron->getActivationFunction()->derivative(z));
                 }
             }
 
-            // Step 3: Update output layer weights and biases
-            for (size_t j = 0; j < outputLayer->getNeurons().size(); j++) {
-                Neuron* neuron = outputLayer->getNeurons()[j];
-                std::vector<double> neuronInputs = hiddenLayers.empty() 
-                    ? inputLayer->getOutputsValue() 
-                    : hiddenLayers.back()->getOutputsValue();
-
-                for (size_t w = 0; w < neuron->getWeights().size(); w++)
-                    neuron->getWeights()[w] += learningRate * outputDeltas[j] * neuronInputs[w];
-
-                neuron->setBias(neuron->getBias() + learningRate * outputDeltas[j]);
+            // ===== 4. Update weights and biases =====
+            // Output layer
+            for (Neuron* neuron : outputLayer->getNeurons()) {
+                neuron->updateWeightsTraining(learningRate);
+                neuron->updateBiasTraining(learningRate);
             }
 
-            // Step 4: Update hidden layer weights and biases
-            for (size_t l = 0; l < hiddenLayers.size(); l++) {
-                Layer* layer = hiddenLayers[l];
-                std::vector<double> neuronInputs = (l == 0) 
-                    ? inputLayer->getOutputsValue() 
-                    : hiddenLayers[l-1]->getOutputsValue();
-
-                for (size_t n = 0; n < layer->getNeurons().size(); n++) {
-                    Neuron* neuron = layer->getNeurons()[n];
-
-                    for (size_t w = 0; w < neuron->getWeights().size(); w++)
-                        neuron->getWeights()[w] += learningRate * hiddenDeltas[l][n] * neuronInputs[w];
-
-                    neuron->setBias(neuron->getBias() + learningRate * hiddenDeltas[l][n]);
+            // Hidden layers
+            for (Layer* layer : hiddenLayers) {
+                for (Neuron* neuron : layer->getNeurons()) {
+                    neuron->updateWeightsTraining(learningRate);
+                    neuron->updateBiasTraining(learningRate);
                 }
+            }
+
+            // Input layer
+            for (Neuron* neuron : inputLayer->getNeurons()) {
+                neuron->updateWeightsTraining(learningRate);
+                neuron->updateBiasTraining(learningRate);
             }
         }
 
         // Print RMSE every 100 epochs
         if (epoch % 100 == 0) {
-            std::cout << "Epoch " << epoch 
-                      << ", RMSE: " << std::sqrt(totalError / trainingData.size()) << "\n";
+            double rmse = std::sqrt(totalError / trainingData.size());
+            std::cout << "Epoch " << epoch << ", RMSE: " << rmse << "\n";
         }
     }
+
+
 }
 
+
+void NeuralNetwork::test(std::vector<std::vector<double>>& testData, std::vector<std::vector<double>>& testLabels)
+{
+    std::cout << "Testing Neural Network...\n";
+    double error = 0.0;
+    double percentageError = 0.0;
+
+    for (size_t i = 0; i < testData.size(); i++) {
+        std::vector<double> input = testData[i];
+        std::vector<double> expected = testLabels[i];
+        std::vector<double> output = predict(input);
+
+        // Compute error (e.g., RMSE)
+        for (size_t j = 0; j < expected.size(); j++) {
+            double diff = output[j] - expected[j];
+            error += diff * diff;
+            percentageError += std::abs(diff);
+        }
+    }
+
+    error = std::sqrt(error / testData.size());
+    percentageError = (1 - percentageError / testData.size()) * 100;
+    std::cout << "Testing completed. RMSE: " << error << "\n";
+    std::cout << "Fiability: " << percentageError << "%\n";
+}
 
 
 void NeuralNetwork::saveModel(const std::string& filename) 
@@ -236,7 +235,7 @@ void NeuralNetwork::loadModel(const std::string& filename)
 }
 
 
-void NeuralNetwork::printNeuralNetwork() const
+void NeuralNetwork::printNeuralNetwork()
 {
     std::cout << "\n=============================\n";
     std::cout << "   Neural Network Structure   \n";

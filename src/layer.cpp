@@ -25,7 +25,16 @@ Layer::Layer(int numNeurons, std::vector<Connection*>& inputs, const ActivationF
         neurons.push_back(n);
     }
     this->setInputs(inputs);
-    this->setWeights(std::vector<std::vector<double>>(numNeurons, std::vector<double>(inputs.size(), 0.0)));
+    std::vector<std::vector<double>> initial_weights;
+    for (int i = 0; i < numNeurons; i++) {
+        initial_weights.push_back(std::vector<double>());
+        for (size_t j = 0; j < inputs.size(); j++) {
+            // initial_weights[i].push_back(static_cast<double>(rand()) / RAND_MAX);
+            initial_weights[i].push_back(1.0);
+        }
+    }
+    this->setWeights(initial_weights);
+   // this->setBiases(std::vector<double>(numNeurons, static_cast<double>(rand()) / RAND_MAX));
     this->setBiases(std::vector<double>(numNeurons, 0.0));
 }
 
