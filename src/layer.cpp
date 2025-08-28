@@ -1,22 +1,16 @@
 #include "layer.hpp"
 #include <iostream>
+#include <random>
 
 
 Layer::Layer(int numNeurons, std::vector<Connection*>& inputs, const ActivationFunctionType activationFunctionType) 
 {
-    std::cout << "Layer created\n";
     if (numNeurons <= 0) 
-    {
         throw std::invalid_argument("Number of neurons must be greater than zero");
-    }
     if (inputs.empty()) 
-    {
         throw std::invalid_argument("Inputs cannot be empty");
-    }
     if (activationFunctionType < LINEAR || activationFunctionType > SOFTPLUS) 
-    {
         throw std::invalid_argument("Invalid activation function type");
-    }
 
     this->activation_function_type = activationFunctionType;
     
@@ -24,23 +18,37 @@ Layer::Layer(int numNeurons, std::vector<Connection*>& inputs, const ActivationF
         Neuron* n = new Neuron(activationFunctionType);
         neurons.push_back(n);
     }
+
     this->setInputs(inputs);
+
+    // Random number generator
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    size_t numInputs = inputs.size();
+    double he_stddev = std::sqrt(2.0 / numInputs);  // He initialization for ReLU
+    std::normal_distribution<> d(0.0, he_stddev);
+
     std::vector<std::vector<double>> initial_weights;
+    std::vector<double> initial_biases;
+
     for (int i = 0; i < numNeurons; i++) {
-        initial_weights.push_back(std::vector<double>());
-        for (size_t j = 0; j < inputs.size(); j++) {
-            // initial_weights[i].push_back(static_cast<double>(rand()) / RAND_MAX);
-            initial_weights[i].push_back(1.0);
+        std::vector<double> neuron_weights;
+        for (size_t j = 0; j < numInputs; j++) {
+            neuron_weights.push_back(d(gen));  // Randomized weight
         }
+        initial_weights.push_back(neuron_weights);
+
+        initial_biases.push_back(0.0);  // Optional: small positive value for ReLU, e.g., 0.01
     }
+
     this->setWeights(initial_weights);
-   // this->setBiases(std::vector<double>(numNeurons, static_cast<double>(rand()) / RAND_MAX));
-    this->setBiases(std::vector<double>(numNeurons, 0.0));
+    this->setBiases(initial_biases);
 }
 
 Layer::~Layer() 
 {
-    std::cout << "Layer destroyed\n";
+    // std::cout << "Layer destroyed\n";
     for (Neuron* neuron : neurons) {
         delete neuron;
     }

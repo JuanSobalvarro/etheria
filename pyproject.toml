@@ -1,0 +1,11 @@
+[project]
+name = "neuralfromscratch"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "numpy>=2.3.2",
+    "pybind11>=3.0.1",
+    "pybind11-stubgen>=2.5.5",
+]

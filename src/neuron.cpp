@@ -16,7 +16,7 @@ Neuron::Neuron(const ActivationFunctionType activation_function_type)
 
 Neuron::~Neuron()
 {
-    std::cout << "Neuron destroyed\n";
+    // std::cout << "Neuron destroyed\n";
     delete output;
     delete act_func;
 }

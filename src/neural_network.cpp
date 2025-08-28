@@ -188,12 +188,8 @@ void NeuralNetwork::train(
                 neuron->updateBiasTraining(learningRate);
             }
         }
-
-        // Print RMSE every 100 epochs
-        if (epoch % 100 == 0) {
-            double rmse = std::sqrt(totalError / trainingData.size());
-            std::cout << "Epoch " << epoch << ", RMSE: " << rmse << "\n";
-        }
+        double rmse = std::sqrt(totalError / trainingData.size());
+        std::cout << "Epoch " << epoch << ", RMSE: " << rmse << "\n";
     }
 
 

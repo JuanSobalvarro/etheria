@@ -8,3 +8,12 @@ for the output layer
 error_term = output * (1 - output) * (expected - output)
 
 hidden layers
+
+
+
+# GIT SUBMODULES
+git submodule add https://github.com/pybind/pybind11.git extern/pybind11
+git submodule update --init --recursive
+
+
+# MIGRATION TO MATRICES
