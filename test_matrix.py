@@ -1,4 +1,4 @@
-from neuralscratchpy import ActivationFunctionType, MatrixNetwork, data_seq_normalization
+from neuralscratchpy import ActivationFunctionType, NeuralNetwork, data_seq_normalization
 
 
 def celsius2fahrenheit(celsius):
@@ -9,7 +9,7 @@ def main():
     layer_sizes = [1, 1]
     hidden_activation = ActivationFunctionType.LINEAR
     output_activation = ActivationFunctionType.LINEAR
-    model = MatrixNetwork(layer_sizes, hidden_activation, output_activation)
+    model = NeuralNetwork(layer_sizes, hidden_activation, output_activation)
 
     input_data = []
     label_data = []

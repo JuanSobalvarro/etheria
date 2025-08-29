@@ -4,7 +4,7 @@ import random
 import numpy as np
 import tkinter as tk
 from tkinter import messagebox
-from neuralscratchpy import MatrixNetwork, ActivationFunctionType
+from neuralscratchpy import NeuralNetwork, ActivationFunctionType
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
@@ -71,7 +71,7 @@ def load_all_mnist():
 
 
 class DigitApp:
-    def __init__(self, master: tk.Tk, net: MatrixNetwork):
+    def __init__(self, master: tk.Tk, net: NeuralNetwork):
         self.master = master
         self.net = net
         self.master.title('MNIST Handwritten Digit - MatrixNetwork Demo')
@@ -156,9 +156,11 @@ def train_network():
 	# images, labels = load_mnist_small(sample_per_class=1000)  # 150*10 = 1500 samples
 	(images, labels), (test_images, test_labels) = load_all_mnist()
 	print('[INFO] Subset loaded:', images.shape, labels.shape)
-	net = MatrixNetwork([784, 128, 64, 10], ActivationFunctionType.RELU, ActivationFunctionType.LINEAR)
-	print('[INFO] Training network (epochs=5)...')
-	net.train(images.tolist(), labels.tolist(), epochs=5, learning_rate=0.01, verbose=True)
+	net = NeuralNetwork([784, 64, 128, 64, 10], ActivationFunctionType.SIGMOID, ActivationFunctionType.SIGMOID)
+	print('[INFO] Training network (epochs=10)...')
+	net.train(images.tolist(), labels.tolist(), epochs=10, learning_rate=0.1, verbose=True)
+	loss, error = net.evaluate(test_images.tolist(), test_labels.tolist())
+	print('[INFO] Evaluation complete:', loss, error)
 	print('[INFO] Training complete.')
 	return net
 

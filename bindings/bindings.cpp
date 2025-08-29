@@ -13,28 +13,28 @@ PYBIND11_MODULE(neuralscratch, m) {
         .value("SOFTPLUS", ActivationFunctionType::SOFTPLUS)
         .export_values();
 
-        // Matrix-based network bindings
-        py::class_<nfs::MatrixNetworkConfig>(m, "MatrixNetworkConfig")
+        // Neural network bindings
+        py::class_<nfs::NeuralNetworkConfig>(m, "NeuralNetworkConfig")
                 .def(py::init<>())
-                .def_readwrite("layer_sizes", &nfs::MatrixNetworkConfig::layer_sizes)
-                .def_readwrite("hidden_activation", &nfs::MatrixNetworkConfig::hidden_activation)
-                .def_readwrite("output_activation", &nfs::MatrixNetworkConfig::output_activation);
+                .def_readwrite("layer_sizes", &nfs::NeuralNetworkConfig::layer_sizes)
+                .def_readwrite("hidden_activation", &nfs::NeuralNetworkConfig::hidden_activation)
+                .def_readwrite("output_activation", &nfs::NeuralNetworkConfig::output_activation);
 
-        py::class_<nfs::MatrixNetwork>(m, "MatrixNetwork")
+        py::class_<nfs::NeuralNetwork>(m, "NeuralNetwork")
                 .def(py::init([](const std::vector<int>& layer_sizes,
                                                 ActivationFunctionType hidden_act = ActivationFunctionType::RELU,
                                                 ActivationFunctionType output_act = ActivationFunctionType::LINEAR) {
-                        nfs::MatrixNetworkConfig cfg; cfg.layer_sizes = layer_sizes; cfg.hidden_activation = hidden_act; cfg.output_activation = output_act; return new nfs::MatrixNetwork(cfg);
+                        nfs::NeuralNetworkConfig cfg; cfg.layer_sizes = layer_sizes; cfg.hidden_activation = hidden_act; cfg.output_activation = output_act; return new nfs::NeuralNetwork(cfg);
                 }), py::arg("layer_sizes"), py::arg("hidden_activation") = ActivationFunctionType::RELU, py::arg("output_activation") = ActivationFunctionType::LINEAR,
-                     R"doc(Create a matrix-based neural network.
+                     R"doc(Create a neural network.
 
 Args:
     layer_sizes: List of layer sizes including input and output (e.g. [784, 128, 64, 10]).
     hidden_activation: Activation for hidden layers.
     output_activation: Activation for the output layer.
 )doc")
-                .def("predict", &nfs::MatrixNetwork::predict, py::arg("input"), R"doc(Forward pass returning output activations.)doc")
-                .def("train", [](nfs::MatrixNetwork& self,
+                .def("predict", &nfs::NeuralNetwork::predict, py::arg("input"), R"doc(Forward pass returning output activations.)doc")
+                .def("train", [](nfs::NeuralNetwork& self,
                                                     const std::vector<std::vector<double>>& data,
                                                     const std::vector<std::vector<double>>& labels,
                                                     int epochs, double lr, bool verbose) {
@@ -51,7 +51,7 @@ Args:
     learning_rate: SGD learning rate.
     verbose: Print loss each epoch.
 )doc")
-                .def("evaluate", [](const nfs::MatrixNetwork& self,
+                .def("evaluate", [](const nfs::NeuralNetwork& self,
                                      const std::vector<std::vector<double>>& inputs,
                                      const std::vector<std::vector<double>>& targets) {
                         double loss = 0.0, acc = 0.0;
@@ -65,6 +65,6 @@ Returns:
         loss: Mean sample loss (MSE * 0.5 factor applied per sample in training).
         accuracy: Fraction in [0,1] for one-hot classification targets.
 )doc")
-                .def_property_readonly("weights", &nfs::MatrixNetwork::getWeights, R"doc(List of weight matrices (rows = out_features, cols = in_features).)doc")
-                .def_property_readonly("biases", &nfs::MatrixNetwork::getBiases, R"doc(List of bias vectors per layer.)doc");
+                .def_property_readonly("weights", &nfs::NeuralNetwork::getWeights, R"doc(List of weight matrices (rows = out_features, cols = in_features).)doc")
+                .def_property_readonly("biases", &nfs::NeuralNetwork::getBiases, R"doc(List of bias vectors per layer.)doc");
 }

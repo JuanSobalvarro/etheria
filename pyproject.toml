@@ -8,4 +8,7 @@ dependencies = [
     "numpy>=2.3.2",
     "pybind11>=3.0.1",
     "pybind11-stubgen>=2.5.5",
+    "scikit-learn>=1.7.1",
+    "tensorflow>=2.20.0",
+    "torch>=2.8.0",
 ]

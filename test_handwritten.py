@@ -1,7 +1,7 @@
 import numpy as np
 import struct
 import os
-from neuralscratchpy import MatrixNetwork, ActivationFunctionType
+from neuralscratchpy import NeuralNetwork, ActivationFunctionType
 
 def one_hot_encode_labels(labels: np.ndarray, num_classes: int) -> np.ndarray:
     """One-hot encode a 1D NumPy array of labels."""
@@ -69,7 +69,7 @@ def main():
 
     hidden_activation = ActivationFunctionType.RELU
     output_activation = ActivationFunctionType.LINEAR
-    neural_network = MatrixNetwork([784, 128, 64, 10], hidden_activation, output_activation)
+    neural_network = NeuralNetwork([784, 128, 64, 10], hidden_activation, output_activation)
 
     try:
         neural_network.train(train_images, train_labels_encoded, epochs=5, learning_rate=0.01, verbose=True)
