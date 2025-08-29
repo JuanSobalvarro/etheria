@@ -1,36 +1,65 @@
-#ifndef NEURAL_NETWORK_H
-#define NEURAL_NETWORK_H
+// Matrix-based neural network (lightweight) – avoids per-neuron/connection objects
+// This co-exists with the object graph implementation for easier comparison.
+#ifndef NEURAL_NETWORK_HPP
+#define NEURAL_NETWORK_HPP
 
 #include <vector>
-#include <string>
-#include <fstream>
-#include <iostream>
+#include <random>
 #include <stdexcept>
 #include <cmath>
-#include <sstream>
+#include <iostream>
 #include "activation_functions.hpp"
-#include "neuron.hpp"
-#include "layer.hpp"
 
+namespace nfs { // neural from scratch
+
+using Vector = std::vector<double>;
+using Matrix = std::vector<Vector>; // row-major: rows x cols, rows = out features
+
+struct NeuralNetworkConfig {
+    std::vector<int> layer_sizes; // includes input & output. size >= 2
+    ActivationFunctionType hidden_activation = RELU;
+    ActivationFunctionType output_activation = LINEAR;
+};
 
 class NeuralNetwork {
 public:
-    NeuralNetwork(int inputSize, const std::vector<int> hiddenLayerSizes, int outputSize, const ActivationFunctionType activationFunctionType);
-    ~NeuralNetwork();
-    
-    std::vector<double> predict(const std::vector<double>& inputs);
-    void train(const std::vector<std::vector<double>>& trainingData, const std::vector<std::vector<double>>& labels, int epochs, double learningRate);
-    void test(std::vector<std::vector<double>>& testData, std::vector<std::vector<double>>& testLabels);
+    explicit NeuralNetwork(const NeuralNetworkConfig& cfg);
 
-    void saveModel(const std::string& filename);
-    void loadModel(const std::string& filename);
+    // Forward pass – returns output activations
+    Vector predict(const Vector& input) const;
 
-    void printNeuralNetwork();
+    // Train with stochastic gradient descent (one sample at a time)
+    void train(const std::vector<Vector>& inputs,
+               const std::vector<Vector>& targets,
+               int epochs,
+               double learning_rate,
+               bool verbose = true);
+    void evaluate(const std::vector<Vector>& inputs,
+                  const std::vector<Vector>& targets,
+                  double& loss,
+                  double& accuracy) const;
+
+    // Accessors
+    const std::vector<Matrix>& getWeights() const { return weights; }
+    const std::vector<Vector>& getBiases() const { return biases; }
+
 private:
-    std::vector<Connection*> inputConnections;
-    Layer* inputLayer;
-    std::vector<Layer*> hiddenLayers;
-    Layer* outputLayer;
+    NeuralNetworkConfig config;
+    std::vector<Matrix> weights; // W[l] shape: layer_sizes[l+1] x layer_sizes[l]
+    std::vector<Vector> biases;  // b[l] length: layer_sizes[l+1]
+
+    // Helper utilities
+    static double activation(double x, ActivationFunctionType type);
+    static double activation_derivative(double x, ActivationFunctionType type); // derivative wrt pre-activation z
+    static Vector applyActivation(const Vector& z, ActivationFunctionType type);
+    static Vector applyActivationDerivative(const Vector& z, ActivationFunctionType type);
+
+    static Vector matvec(const Matrix& W, const Vector& v);              // W * v
+    static Matrix outer(const Vector& a, const Vector& b);                // a (rows) * b^T
+    static Vector add(const Vector& a, const Vector& b);
+    static void inplace_axpy(Vector& y, const Vector& x, double alpha);   // y += alpha * x
 };
 
-#endif // NEURAL_NETWORK_H
+} // namespace nfs
+
+#endif // NEURAL_NETWORK_HPP

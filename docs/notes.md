@@ -17,3 +17,6 @@ git submodule update --init --recursive
 
 
 # MIGRATION TO MATRICES
+
+# TERMS
+XAVIER INITIALIZATION OF WEIGHTS

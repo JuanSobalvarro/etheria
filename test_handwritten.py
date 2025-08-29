@@ -1,7 +1,7 @@
 import numpy as np
 import struct
 import os
-from neuralscratchpy import NeuralNetwork, ActivationFunctionType
+from neuralscratchpy import MatrixNetwork, ActivationFunctionType
 
 def one_hot_encode_labels(labels: np.ndarray, num_classes: int) -> np.ndarray:
     """One-hot encode a 1D NumPy array of labels."""
@@ -62,30 +62,33 @@ def main():
     test_labels_encoded = one_hot_encode_labels(test_labels, 10)
 
     # Sample a smaller balanced training set
-    train_images_small, train_labels_small = sample_per_class(train_images, train_labels_encoded, num_per_class=100)
+    # train_images_small, train_labels_small = sample_per_class(train_images, train_labels_encoded, num_per_class=100)
 
-    print("Training set:", train_images_small.shape, train_labels_small.shape)
+    print("Training set:", train_images.shape, train_labels_encoded.shape)
     print("Test set:", test_images.shape, test_labels_encoded.shape)
 
-    neural_network = NeuralNetwork(784, [128, 64], 10, ActivationFunctionType.RELU)
+    hidden_activation = ActivationFunctionType.RELU
+    output_activation = ActivationFunctionType.LINEAR
+    neural_network = MatrixNetwork([784, 128, 64, 10], hidden_activation, output_activation)
 
     try:
-        neural_network.train(train_images_small, train_labels_small, 20, 0.01)
+        neural_network.train(train_images, train_labels_encoded, epochs=5, learning_rate=0.01, verbose=True)
     except Exception as e:
         with open("error.log", "a") as f:
             f.write(f"Error during training: {e}\n")
         return
 
-    # print for 3 first test
-    # for i in range(3):
-    #     test_prediction = neural_network.predict(test_images[i])
-    #     test_prediction_number = np.argmax(test_prediction)
-    #     expected_label = np.argmax(test_labels_encoded[i])
-    #     print("Test prediction:", test_prediction)
-    #     print("Expected:", expected_label)
-    #     print("Predicted number:", test_prediction_number)
+    # Test the neural network
+    test_loss, test_accuracy = neural_network.evaluate(test_images, test_labels_encoded)
+    print("Test accuracy:", test_accuracy)
+    print("Test loss:", test_loss)
 
-    neural_network.test(test_images, test_labels_encoded)
+
+    # manual testing
+    sample_image = test_images[0]
+    predicted = neural_network.predict(sample_image)
+    print("Predicted:", predicted)
+    print("True:", test_labels_encoded[0]) 
 
 if __name__ == "__main__":
     main()
