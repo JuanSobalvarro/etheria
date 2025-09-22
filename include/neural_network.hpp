@@ -17,8 +17,8 @@ using Matrix = std::vector<Vector>; // row-major: rows x cols, rows = out featur
 
 struct NeuralNetworkConfig {
     std::vector<int> layer_sizes; // includes input & output. size >= 2
-    ActivationFunctionType hidden_activation = RELU;
-    ActivationFunctionType output_activation = LINEAR;
+    ActivationFunction::ActivationFunctionType hidden_activation = ActivationFunction::RELU;
+    ActivationFunction::ActivationFunctionType output_activation = ActivationFunction::LINEAR;
 };
 
 class NeuralNetwork {
@@ -49,10 +49,10 @@ private:
     std::vector<Vector> biases;  // b[l] length: layer_sizes[l+1]
 
     // Helper utilities
-    static double activation(double x, ActivationFunctionType type);
-    static double activation_derivative(double x, ActivationFunctionType type); // derivative wrt pre-activation z
-    static Vector applyActivation(const Vector& z, ActivationFunctionType type);
-    static Vector applyActivationDerivative(const Vector& z, ActivationFunctionType type);
+    static double activation(double x, ActivationFunction::ActivationFunctionType type);
+    static double activation_derivative(double x, ActivationFunction::ActivationFunctionType type); // derivative wrt pre-activation z
+    static Vector applyActivation(const Vector& z, ActivationFunction::ActivationFunctionType type);
+    static Vector applyActivationDerivative(const Vector& z, ActivationFunction::ActivationFunctionType type);
 
     static Vector matvec(const Matrix& W, const Vector& v);              // W * v
     static Matrix outer(const Vector& a, const Vector& b);                // a (rows) * b^T
