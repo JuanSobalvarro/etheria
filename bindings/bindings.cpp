@@ -5,12 +5,12 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(neuralscratch, m) {
-    py::enum_<ActivationFunctionType>(m, "ActivationFunctionType")
-        .value("LINEAR", ActivationFunctionType::LINEAR)
-        .value("RELU", ActivationFunctionType::RELU)
-        .value("SIGMOID", ActivationFunctionType::SIGMOID)
-        .value("TANH", ActivationFunctionType::TANH)
-        .value("SOFTPLUS", ActivationFunctionType::SOFTPLUS)
+    py::enum_<Activation::ActivationFunctionType>(m, "ActivationFunctionType")
+        .value("LINEAR", Activation::LINEAR)
+        .value("RELU", Activation::RELU)
+        .value("SIGMOID", Activation::SIGMOID)
+        .value("TANH", Activation::TANH)
+        .value("SOFTPLUS", Activation::SOFTPLUS)
         .export_values();
 
         // Neural network bindings
@@ -22,10 +22,10 @@ PYBIND11_MODULE(neuralscratch, m) {
 
         py::class_<nfs::NeuralNetwork>(m, "NeuralNetwork")
                 .def(py::init([](const std::vector<int>& layer_sizes,
-                                                ActivationFunctionType hidden_act = ActivationFunctionType::RELU,
-                                                ActivationFunctionType output_act = ActivationFunctionType::LINEAR) {
+                                                Activation::ActivationFunctionType hidden_act = Activation::RELU,
+                                                Activation::ActivationFunctionType output_act = Activation::LINEAR) {
                         nfs::NeuralNetworkConfig cfg; cfg.layer_sizes = layer_sizes; cfg.hidden_activation = hidden_act; cfg.output_activation = output_act; return new nfs::NeuralNetwork(cfg);
-                }), py::arg("layer_sizes"), py::arg("hidden_activation") = ActivationFunctionType::RELU, py::arg("output_activation") = ActivationFunctionType::LINEAR,
+                }), py::arg("layer_sizes"), py::arg("hidden_activation") = Activation::RELU, py::arg("output_activation") = Activation::LINEAR,
                      R"doc(Create a neural network.
 
 Args:

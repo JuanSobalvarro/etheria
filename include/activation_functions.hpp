@@ -12,7 +12,7 @@
 
 
 
-namespace ActivationFunction {
+namespace Activation {
     
 enum ActivationFunctionType {
     LINEAR = 0,

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.20)
 project(NeuralFromScratch LANGUAGES CXX)
 
 # Set C++ standard
@@ -20,7 +20,7 @@ target_compile_definitions(neuralscratch PRIVATE PYBIND11_CPP_LOCAL_ERROR_REPORT
 # === Optional compile flags ===
 if(MSVC)
     # Windows compiler flags
-    target_compile_options(neuralscratch PRIVATE /W3 /O2)
+    target_compile_options(neuralscratch PRIVATE /W3)
 else()
     target_compile_options(neuralscratch PRIVATE -Wall -O2 -g)
 endif()

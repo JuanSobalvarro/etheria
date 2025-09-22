@@ -22,10 +22,10 @@ NeuralNetwork::NeuralNetwork(const NeuralNetworkConfig& cfg): config(cfg) {
         biases[l].assign(out, 0.0);
 
         double stddev;
-        ActivationFunctionType act = (l + 1 == config.layer_sizes.size() - 1) ? config.output_activation : config.hidden_activation;
-        if (act == RELU || act == SOFTPLUS) {
+        Activation::ActivationFunctionType act = (l + 1 == config.layer_sizes.size() - 1) ? config.output_activation : config.hidden_activation;
+        if (act == Activation::RELU || act == Activation::SOFTPLUS) {
             stddev = std::sqrt(2.0 / in); // He
-        } else if (act == SIGMOID || act == TANH) {
+        } else if (act == Activation::SIGMOID || act == Activation::TANH) {
             stddev = std::sqrt(1.0 / in); // Xavier simple
         } else { // LINEAR
             stddev = std::sqrt(1.0 / in);
@@ -39,21 +39,21 @@ NeuralNetwork::NeuralNetwork(const NeuralNetworkConfig& cfg): config(cfg) {
     }
 }
 
-double NeuralNetwork::activation(double x, ActivationFunctionType type) {
-    return act::forward(type, x);
+double NeuralNetwork::activation(double x, Activation::ActivationFunctionType type) {
+    return Activation::forward(type, x);
 }
 
-double NeuralNetwork::activation_derivative(double x, ActivationFunctionType type) {
-    return act::derivative(type, x);
+double NeuralNetwork::activation_derivative(double x, Activation::ActivationFunctionType type) {
+    return Activation::derivative(type, x);
 }
 
-Vector NeuralNetwork::applyActivation(const Vector& z, ActivationFunctionType type) {
+Vector NeuralNetwork::applyActivation(const Vector& z, Activation::ActivationFunctionType type) {
     Vector a(z.size());
     for (size_t i = 0; i < z.size(); ++i) a[i] = activation(z[i], type);
     return a;
 }
 
-Vector NeuralNetwork::applyActivationDerivative(const Vector& z, ActivationFunctionType type) {
+Vector NeuralNetwork::applyActivationDerivative(const Vector& z, Activation::ActivationFunctionType type) {
     Vector d(z.size());
     for (size_t i = 0; i < z.size(); ++i) d[i] = activation_derivative(z[i], type);
     return d;
@@ -96,7 +96,7 @@ Vector NeuralNetwork::predict(const Vector& input) const {
     }
     Vector a = input; // activation of previous layer
     for (size_t l = 0; l < weights.size(); ++l) {
-        ActivationFunctionType act = (l == weights.size()-1) ? config.output_activation : config.hidden_activation;
+        Activation::ActivationFunctionType act = (l == weights.size()-1) ? config.output_activation : config.hidden_activation;
         Vector z = matvec(weights[l], a);
         for (size_t i = 0; i < z.size(); ++i) z[i] += biases[l][i];
         a = applyActivation(z, act);
@@ -123,7 +123,7 @@ void NeuralNetwork::train(const std::vector<Vector>& inputs,
             std::vector<Vector> a_values; // activations (a0 = input)
             a_values.push_back(x);
             for (size_t l = 0; l < weights.size(); ++l) {
-                ActivationFunctionType act = (l == weights.size()-1) ? config.output_activation : config.hidden_activation;
+                Activation::ActivationFunctionType act = (l == weights.size()-1) ? config.output_activation : config.hidden_activation;
                 Vector z = matvec(weights[l], a_values.back());
                 for (size_t i = 0; i < z.size(); ++i) z[i] += biases[l][i];
                 z_values.push_back(z);
@@ -144,7 +144,7 @@ void NeuralNetwork::train(const std::vector<Vector>& inputs,
             // Output delta
             {
                 size_t L = weights.size() - 1;
-                ActivationFunctionType act = config.output_activation;
+                Activation::ActivationFunctionType act = config.output_activation;
                 Vector d_act = applyActivationDerivative(z_values[L], act);
                 deltas[L].assign(y.size(), 0.0);
                 for (size_t i = 0; i < y.size(); ++i) {
@@ -154,8 +154,8 @@ void NeuralNetwork::train(const std::vector<Vector>& inputs,
             }
             // Hidden layers
             for (int l = static_cast<int>(weights.size()) - 2; l >= 0; --l) {
-                ActivationFunctionType act = (l == static_cast<int>(weights.size()) - 1) ? config.output_activation : config.hidden_activation;
-                ActivationFunctionType act_hidden = (l == static_cast<int>(weights.size()) - 1) ? config.output_activation : config.hidden_activation;
+                Activation::ActivationFunctionType act = (l == static_cast<int>(weights.size()) - 1) ? config.output_activation : config.hidden_activation;
+                Activation::ActivationFunctionType act_hidden = (l == static_cast<int>(weights.size()) - 1) ? config.output_activation : config.hidden_activation;
                 (void)act; // silence unused (act_hidden kept for clarity)
                 Vector d_act = applyActivationDerivative(z_values[l], (l == static_cast<int>(weights.size()) - 1) ? config.output_activation : config.hidden_activation);
                 deltas[l].assign(z_values[l].size(), 0.0);
