@@ -2,8 +2,7 @@
 * This file is part of the Neural Network library. This contains the activation functions
 * used in the neural network.
 */
-#ifndef ACTIVATION_FUNCTIONS_HPP
-#define ACTIVATION_FUNCTIONS_HPP
+#pragma once
 
 #include <cmath>
 #include <stdexcept>
@@ -12,7 +11,7 @@
 
 
 
-namespace Activation {
+namespace eth::act {
     
 enum ActivationFunctionType {
     LINEAR = 0,
@@ -71,6 +70,4 @@ inline std::vector<double> derivative_copy(ActivationFunctionType type, const Co
     return out;
 }
 
-} // namespace act
-
-#endif // ACTIVATION_FUNCTIONS_HPP
+} // namespace Activation

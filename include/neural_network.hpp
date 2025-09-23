@@ -1,7 +1,6 @@
 // Matrix-based neural network (lightweight) – avoids per-neuron/connection objects
 // This co-exists with the object graph implementation for easier comparison.
-#ifndef NEURAL_NETWORK_HPP
-#define NEURAL_NETWORK_HPP
+#pragma once
 
 #include <vector>
 #include <random>
@@ -9,16 +8,16 @@
 #include <cmath>
 #include <iostream>
 #include "activation_functions.hpp"
+#include "layer.hpp"
 
-namespace nfs { // neural from scratch
+namespace eth::mlp { // neural from scratch
 
 using Vector = std::vector<double>;
 using Matrix = std::vector<Vector>; // row-major: rows x cols, rows = out features
 
 struct NeuralNetworkConfig {
-    std::vector<int> layer_sizes; // includes input & output. size >= 2
-    Activation::ActivationFunctionType hidden_activation = Activation::RELU;
-    Activation::ActivationFunctionType output_activation = Activation::LINEAR;
+    int input_size;
+    std::vector<Layer> layers; // hidden + output layers
 };
 
 class NeuralNetwork {
@@ -49,10 +48,10 @@ private:
     std::vector<Vector> biases;  // b[l] length: layer_sizes[l+1]
 
     // Helper utilities
-    static double activation(double x, Activation::ActivationFunctionType type);
-    static double activation_derivative(double x, Activation::ActivationFunctionType type); // derivative wrt pre-activation z
-    static Vector applyActivation(const Vector& z, Activation::ActivationFunctionType type);
-    static Vector applyActivationDerivative(const Vector& z, Activation::ActivationFunctionType type);
+    static double activation(double x, act::ActivationFunctionType type);
+    static double activation_derivative(double x, act::ActivationFunctionType type); // derivative wrt pre-activation z
+    static Vector applyActivation(const Vector& z, act::ActivationFunctionType type);
+    static Vector applyActivationDerivative(const Vector& z, act::ActivationFunctionType type);
 
     static Vector matvec(const Matrix& W, const Vector& v);              // W * v
     static Matrix outer(const Vector& a, const Vector& b);                // a (rows) * b^T
@@ -60,6 +59,4 @@ private:
     static void inplace_axpy(Vector& y, const Vector& x, double alpha);   // y += alpha * x
 };
 
-} // namespace nfs
-
-#endif // NEURAL_NETWORK_HPP
+} // namespace nn

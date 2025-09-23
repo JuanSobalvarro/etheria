@@ -4,28 +4,28 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(neuralscratch, m) {
-    py::enum_<Activation::ActivationFunctionType>(m, "ActivationFunctionType")
-        .value("LINEAR", Activation::LINEAR)
-        .value("RELU", Activation::RELU)
-        .value("SIGMOID", Activation::SIGMOID)
-        .value("TANH", Activation::TANH)
-        .value("SOFTPLUS", Activation::SOFTPLUS)
+PYBIND11_MODULE(etheria, m) {
+    py::enum_<act::ActivationFunctionType>(m, "ActivationFunctionType")
+        .value("LINEAR", act::LINEAR)
+        .value("RELU", act::RELU)
+        .value("SIGMOID", act::SIGMOID)
+        .value("TANH", act::TANH)
+        .value("SOFTPLUS", act::SOFTPLUS)
         .export_values();
 
         // Neural network bindings
-        py::class_<nfs::NeuralNetworkConfig>(m, "NeuralNetworkConfig")
+        py::class_<mlp::NeuralNetworkConfig>(m, "NeuralNetworkConfig")
                 .def(py::init<>())
-                .def_readwrite("layer_sizes", &nfs::NeuralNetworkConfig::layer_sizes)
-                .def_readwrite("hidden_activation", &nfs::NeuralNetworkConfig::hidden_activation)
-                .def_readwrite("output_activation", &nfs::NeuralNetworkConfig::output_activation);
+                .def_readwrite("layer_sizes", &mlp::NeuralNetworkConfig::layer_sizes)
+                .def_readwrite("hidden_activation", &mlp::NeuralNetworkConfig::hidden_activation)
+                .def_readwrite("output_activation", &mlp::NeuralNetworkConfig::output_activation);
 
-        py::class_<nfs::NeuralNetwork>(m, "NeuralNetwork")
+        py::class_<mlp::NeuralNetwork>(m, "NeuralNetwork")
                 .def(py::init([](const std::vector<int>& layer_sizes,
-                                                Activation::ActivationFunctionType hidden_act = Activation::RELU,
-                                                Activation::ActivationFunctionType output_act = Activation::LINEAR) {
-                        nfs::NeuralNetworkConfig cfg; cfg.layer_sizes = layer_sizes; cfg.hidden_activation = hidden_act; cfg.output_activation = output_act; return new nfs::NeuralNetwork(cfg);
-                }), py::arg("layer_sizes"), py::arg("hidden_activation") = Activation::RELU, py::arg("output_activation") = Activation::LINEAR,
+                                                act::ActivationFunctionType hidden_act = act::RELU,
+                                                act::ActivationFunctionType output_act = act::LINEAR) {
+                        mlp::NeuralNetworkConfig cfg; cfg.layer_sizes = layer_sizes; cfg.hidden_activation = hidden_act; cfg.output_activation = output_act; return new mlp::NeuralNetwork(cfg);
+                }), py::arg("layer_sizes"), py::arg("hidden_activation") = act::RELU, py::arg("output_activation") = act::LINEAR,
                      R"doc(Create a neural network.
 
 Args:
@@ -33,8 +33,8 @@ Args:
     hidden_activation: Activation for hidden layers.
     output_activation: Activation for the output layer.
 )doc")
-                .def("predict", &nfs::NeuralNetwork::predict, py::arg("input"), R"doc(Forward pass returning output activations.)doc")
-                .def("train", [](nfs::NeuralNetwork& self,
+                .def("predict", &mlp::NeuralNetwork::predict, py::arg("input"), R"doc(Forward pass returning output activations.)doc")
+                .def("train", [](mlp::NeuralNetwork& self,
                                                     const std::vector<std::vector<double>>& data,
                                                     const std::vector<std::vector<double>>& labels,
                                                     int epochs, double lr, bool verbose) {
@@ -51,7 +51,7 @@ Args:
     learning_rate: SGD learning rate.
     verbose: Print loss each epoch.
 )doc")
-                .def("evaluate", [](const nfs::NeuralNetwork& self,
+                .def("evaluate", [](const mlp::NeuralNetwork& self,
                                      const std::vector<std::vector<double>>& inputs,
                                      const std::vector<std::vector<double>>& targets) {
                         double loss = 0.0, acc = 0.0;
@@ -65,6 +65,6 @@ Returns:
         loss: Mean sample loss (MSE * 0.5 factor applied per sample in training).
         accuracy: Fraction in [0,1] for one-hot classification targets.
 )doc")
-                .def_property_readonly("weights", &nfs::NeuralNetwork::getWeights, R"doc(List of weight matrices (rows = out_features, cols = in_features).)doc")
-                .def_property_readonly("biases", &nfs::NeuralNetwork::getBiases, R"doc(List of bias vectors per layer.)doc");
+                .def_property_readonly("weights", &mlp::NeuralNetwork::getWeights, R"doc(List of weight matrices (rows = out_features, cols = in_features).)doc")
+                .def_property_readonly("biases", &mlp::NeuralNetwork::getBiases, R"doc(List of bias vectors per layer.)doc");
 }
