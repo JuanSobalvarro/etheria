@@ -5,7 +5,7 @@
 */
 #pragma once
 
-#include "activation_functions.hpp"
+#include "activation/activation.hpp"
 #include <vector>
 
 namespace eth::mlp

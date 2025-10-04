@@ -8,7 +8,7 @@ PYTHON_LIB_NAME := 'etheria.cp313-win_amd64.pyd'
     just --list
 
 [group('build')]
-@build_copy: build copy_libs
+@build_copy: build copy
 
 # build C++ test executable
 [group('build')]
@@ -17,6 +17,19 @@ PYTHON_LIB_NAME := 'etheria.cp313-win_amd64.pyd'
     uv run cmake --build build --config Release
 
 [group('build')]
-@copy_libs:
+@build_debug:
+    uv run cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+    uv run cmake --build build --config Debug
+
+[group('build')]
+@copy:
     cp -r build/Release/etheria.* {{ PYTHON_LIB_DIR }}
     echo "Copied libraries to {{ PYTHON_LIB_DIR }}"
+
+[group('clean')]
+@clean:
+    rm -rf build
+
+[group('cpptests')]
+@run_cpp_tests:
+    uv run build/cpptests/Debug/test_fit.exe

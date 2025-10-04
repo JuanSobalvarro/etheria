@@ -1,10 +1,12 @@
-#include "algebra/ops.hpp"
+#include "alg/ops.hpp"
 #include <stdexcept> // for runtime_error
 
-namespace eth::algebra::cpu {
+namespace eth::alg 
+{
 
 // --- Matrix-vector product: y = W * v ---
-Vector matrixvectorproduct(const Matrix& W, const Vector& v) {
+Vector matrixvectorproduct(const Matrix& W, const Vector& v) 
+{
     if (W.empty() || W[0].size() != v.size())
         throw std::runtime_error("matrixvectorproduct: dimension mismatch");
 
@@ -18,7 +20,8 @@ Vector matrixvectorproduct(const Matrix& W, const Vector& v) {
 }
 
 // --- Outer product: M = a * b^T ---
-Matrix outerproduct(const Vector& a, const Vector& b) {
+Matrix outerproduct(const Vector& a, const Vector& b) 
+{
     if (a.empty() || b.empty())
         throw std::runtime_error("outerproduct: dimension mismatch");
 
@@ -35,7 +38,8 @@ Matrix outerproduct(const Vector& a, const Vector& b) {
 }
 
 // --- Vector addition: c = a + b ---
-Vector vectoradd(const Vector& a, const Vector& b) {
+Vector vectoradd(const Vector& a, const Vector& b) 
+{
     if (a.size() != b.size())
         throw std::runtime_error("vectoradd: dimension mismatch");
 
@@ -48,13 +52,38 @@ Vector vectoradd(const Vector& a, const Vector& b) {
 
 
 // --- AXPY: y += alpha * x ---
-void inplace_axpy(Vector& y, const Vector& x, Scalar alpha) {
+void inplace_axpy(Vector& y, const Vector& x, Scalar alpha) 
+{
     if (y.size() != x.size())
-        throw std::runtime_error("inplace_axpy: dimension mismatch");
+        throw std::runtime_error("inplace_axpy: dimension mismatch. Dim1: " + std::to_string(y.size()) + " Dim2: " + std::to_string(x.size()));
 
     for (size_t i = 0; i < y.size(); i++) {
         y[i] += alpha * x[i];
     }
 }
 
-} // namespace eth::algebra
+Vector applyFunction(const Vector& v, act::ActivationFunctionType act_type, bool derivative) 
+{
+    if (derivative) 
+    {
+        return act::forward_activation_derivative(act_type, v);
+    }
+    return act::forward_activation(act_type, v);
+}
+
+void inplace_applyFunction(Vector& v, act::ActivationFunctionType act_type, bool derivative) 
+{
+    if (derivative) 
+    {
+        for (auto& val : v) {
+            val = act::forward_activation_derivative(act_type, val);
+        }
+    } 
+    else 
+    {
+        for (auto& val : v) {
+            val = act::forward_activation(act_type, val);
+        }
+    }
+}
+} // namespace eth::alg

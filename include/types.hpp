@@ -2,7 +2,7 @@
 
 #include <vector>
 
-namespace eth::algebra 
+namespace eth
 {
     using Scalar = float;
     using Vector = std::vector<Scalar>;

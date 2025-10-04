@@ -9,3 +9,5 @@ build
 data
 extern
 etheria
+test*.py
+benchmark*.py

@@ -1,70 +1,77 @@
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-#include "neural_network.hpp"
+#include <pybind11/stl.h>     // for std::vector conversions
+#include <pybind11/stl_bind.h>
+#include <pybind11/numpy.h>   // for numpy <-> Vector interop
+#include "mlp/neural_network.hpp"
+#include "cuda/cuda_helper.cuh"
 
 namespace py = pybind11;
 
+PYBIND11_MAKE_OPAQUE(eth::Vector)
+PYBIND11_MAKE_OPAQUE(eth::Matrix)
+
 PYBIND11_MODULE(etheria, m) {
-    py::enum_<act::ActivationFunctionType>(m, "ActivationFunctionType")
-        .value("LINEAR", act::LINEAR)
-        .value("RELU", act::RELU)
-        .value("SIGMOID", act::SIGMOID)
-        .value("TANH", act::TANH)
-        .value("SOFTPLUS", act::SOFTPLUS)
-        .export_values();
+    m.doc() = "Etheria | Neural Network library (CPU/CUDA backend)";
 
-        // Neural network bindings
-        py::class_<mlp::NeuralNetworkConfig>(m, "NeuralNetworkConfig")
-                .def(py::init<>())
-                .def_readwrite("layer_sizes", &mlp::NeuralNetworkConfig::layer_sizes)
-                .def_readwrite("hidden_activation", &mlp::NeuralNetworkConfig::hidden_activation)
-                .def_readwrite("output_activation", &mlp::NeuralNetworkConfig::output_activation);
+    // --- enums ---
+    py::enum_<eth::mlp::Backend>(m, "Backend")
+        .value("CPU", eth::mlp::Backend::CPU)
+        .value("CUDA", eth::mlp::Backend::CUDA);
 
-        py::class_<mlp::NeuralNetwork>(m, "NeuralNetwork")
-                .def(py::init([](const std::vector<int>& layer_sizes,
-                                                act::ActivationFunctionType hidden_act = act::RELU,
-                                                act::ActivationFunctionType output_act = act::LINEAR) {
-                        mlp::NeuralNetworkConfig cfg; cfg.layer_sizes = layer_sizes; cfg.hidden_activation = hidden_act; cfg.output_activation = output_act; return new mlp::NeuralNetwork(cfg);
-                }), py::arg("layer_sizes"), py::arg("hidden_activation") = act::RELU, py::arg("output_activation") = act::LINEAR,
-                     R"doc(Create a neural network.
+    // --- NeuralNetworkConfig ---
+    py::class_<eth::mlp::NeuralNetworkConfig>(m, "NeuralNetworkConfig")
+        .def(py::init<>())
+        .def_readwrite("input_size", &eth::mlp::NeuralNetworkConfig::input_size)
+        .def_readwrite("layers", &eth::mlp::NeuralNetworkConfig::layers)
+        .def_readwrite("backend", &eth::mlp::NeuralNetworkConfig::backend)
+        .def_readwrite("device_id", &eth::mlp::NeuralNetworkConfig::device_id)
+        .def_readwrite("verbose", &eth::mlp::NeuralNetworkConfig::verbose);
 
-Args:
-    layer_sizes: List of layer sizes including input and output (e.g. [784, 128, 64, 10]).
-    hidden_activation: Activation for hidden layers.
-    output_activation: Activation for the output layer.
-)doc")
-                .def("predict", &mlp::NeuralNetwork::predict, py::arg("input"), R"doc(Forward pass returning output activations.)doc")
-                .def("train", [](mlp::NeuralNetwork& self,
-                                                    const std::vector<std::vector<double>>& data,
-                                                    const std::vector<std::vector<double>>& labels,
-                                                    int epochs, double lr, bool verbose) {
-                        if (data.empty()) return; // no-op
-                        if (data.size() != labels.size()) throw std::runtime_error("data and labels size mismatch");
-                        self.train(data, labels, epochs, lr, verbose);
-                }, py::arg("data"), py::arg("labels"), py::arg("epochs"), py::arg("learning_rate"), py::arg("verbose") = true,
-                     R"doc(Train the network with per-sample SGD.
+    py::enum_<eth::act::ActivationFunctionType>(m, "Activation")
+        .value("LINEAR", eth::act::LINEAR)
+        .value("SIGMOID", eth::act::SIGMOID)
+        .value("RELU", eth::act::RELU)
+        .value("TANH", eth::act::TANH)
+        .value("SOFTPLUS", eth::act::SOFTPLUS)
+        .value("SOFTMAX", eth::act::SOFTMAX);
 
-Args:
-    data: List of input vectors.
-    labels: List of target vectors (same length as data).
-    epochs: Number of epochs.
-    learning_rate: SGD learning rate.
-    verbose: Print loss each epoch.
-)doc")
-                .def("evaluate", [](const mlp::NeuralNetwork& self,
-                                     const std::vector<std::vector<double>>& inputs,
-                                     const std::vector<std::vector<double>>& targets) {
-                        double loss = 0.0, acc = 0.0;
-                        self.evaluate(inputs, targets, loss, acc);
-                        return py::make_tuple(loss, acc);
-                }, py::arg("inputs"), py::arg("targets"),
-                    R"doc(Evaluate the network on a dataset.
+    // --- Vector and Matrix as alias (std::vector<float>) ---
+    // TODO: Matrix needs to have a list of eth.Vector I want to be able to just put [[1,2],[3,4]] so fix that please
+    py::bind_vector<eth::Vector>(m, "Vector");
+    py::bind_vector<eth::Matrix>(m, "Matrix");
 
-Returns:
-    (loss, accuracy) tuple where:
-        loss: Mean sample loss (MSE * 0.5 factor applied per sample in training).
-        accuracy: Fraction in [0,1] for one-hot classification targets.
-)doc")
-                .def_property_readonly("weights", &mlp::NeuralNetwork::getWeights, R"doc(List of weight matrices (rows = out_features, cols = in_features).)doc")
-                .def_property_readonly("biases", &mlp::NeuralNetwork::getBiases, R"doc(List of bias vectors per layer.)doc");
+    // --- LayerConfig ---
+    py::class_<eth::mlp::Layer>(m, "Layer")
+        .def(py::init<int, eth::act::ActivationFunctionType>(),
+             py::arg("units"), py::arg("activation"))
+        .def("getUnits", &eth::mlp::Layer::getUnits)
+        .def("getActivation", &eth::mlp::Layer::getActivation);
+
+    // --- NeuralNetwork ---
+    py::class_<eth::mlp::NeuralNetwork>(m, "NeuralNetwork")
+        .def(py::init<const eth::mlp::NeuralNetworkConfig&>())
+        .def("getWeights", &eth::mlp::NeuralNetwork::getWeights)
+        .def("getBiases", &eth::mlp::NeuralNetwork::getBiases)
+        .def("getConfig", &eth::mlp::NeuralNetwork::getConfig, py::return_value_policy::reference_internal)
+        .def("setVerbose", &eth::mlp::NeuralNetwork::setVerbose, py::arg("v"))
+        .def("useCUDADevice", &eth::mlp::NeuralNetwork::useCUDADevice, py::arg("device_id")=0)
+        .def("useCPU", &eth::mlp::NeuralNetwork::useCPU)
+        .def("predict", &eth::mlp::NeuralNetwork::predict)
+        .def("fit", &eth::mlp::NeuralNetwork::fit,
+             py::arg("inputs"), py::arg("targets"),
+             py::arg("epochs"), py::arg("learning_rate"),
+             py::arg("momentum")=0.9f, py::arg("verbose")=true)
+        .def("evaluate", [](const eth::mlp::NeuralNetwork &nn,
+                            const std::vector<eth::Vector>& inputs,
+                            const std::vector<eth::Vector>& targets) {
+                double loss=0, acc=0;
+                nn.evaluate(inputs, targets, loss, acc);
+                return py::make_tuple(loss, acc);
+        });
+
+    // --- CUDA Helper ---
+    m.def("is_cuda_available", &eth::cuda::isCUDAAvailable, "Check if CUDA is available");
+    m.def("number_cuda_devices", &eth::cuda::numberCUDADevices, "Get the number of CUDA devices");
+    m.def("is_cuda_compatible", &eth::cuda::isCUDACompatible, "Check if a CUDA device is compatible");
+    m.def("list_cuda_devices", &eth::cuda::listCUDADevices, "List all available CUDA devices");
 }
