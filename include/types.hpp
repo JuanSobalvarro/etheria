@@ -4,7 +4,14 @@
 
 namespace eth
 {
-    using Scalar = float;
-    using Vector = std::vector<Scalar>;
-    using Matrix = std::vector<Vector>;
+    enum class DType
+    {
+        Float16,
+        Float32,
+        Float64,
+        Int8,
+        Int16,
+        Int32,
+        Int64,
+    }
 }

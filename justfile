@@ -1,7 +1,7 @@
 
 # PYTHON LIB DIRECTORY
 
-PYTHON_LIB_DIR := './etheria/'
+PYTHON_LIB_DIR := './etheria/core/'
 PYTHON_LIB_NAME := 'etheria.cp313-win_amd64.pyd'
 
 @_default:

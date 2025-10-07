@@ -27,9 +27,9 @@ target_include_directories(eth_lib PUBLIC include)
 target_link_libraries(eth_lib PRIVATE CUDA::cudart)
 
 file(GLOB_RECURSE BINDINGS_SRC CONFIGURE_DEPENDS bindings/*.cpp)
-pybind11_add_module(etheria ${BINDINGS_SRC})
-target_link_libraries(etheria PRIVATE eth_lib CUDA::cudart)
-target_include_directories(etheria PRIVATE include)
+pybind11_add_module(core ${BINDINGS_SRC})
+target_link_libraries(core PRIVATE eth_lib CUDA::cudart)
+target_include_directories(core PRIVATE include)
 
 # 4. C++ tests
 # add_subdirectory(cpptests)
