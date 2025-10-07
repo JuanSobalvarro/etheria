@@ -8,6 +8,14 @@ tests
 build
 data
 extern
-etheria
 test*.py
 benchmark*.py
+
+# Compiled python
+*.pyc
+*.pyd
+
+# compiled C/C++++
+*.obj
+*.exp
+*.lib
