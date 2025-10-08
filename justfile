@@ -1,8 +1,8 @@
 
 # PYTHON LIB DIRECTORY
 
-PYTHON_LIB_DIR := './etheria/core/'
-PYTHON_LIB_NAME := 'etheria.cp313-win_amd64.pyd'
+PYTHON_LIB_DIR := './etheria/'
+PYTHON_LIB_NAME := '_etheria.cp313-win_amd64.pyd'
 
 @_default:
     just --list
@@ -23,7 +23,7 @@ PYTHON_LIB_NAME := 'etheria.cp313-win_amd64.pyd'
 
 [group('build')]
 @copy:
-    cp -r build/Release/etheria.* {{ PYTHON_LIB_DIR }}
+    cp -r build/Release/{{ PYTHON_LIB_NAME }} {{ PYTHON_LIB_DIR }}
     echo "Copied libraries to {{ PYTHON_LIB_DIR }}"
 
 [group('clean')]

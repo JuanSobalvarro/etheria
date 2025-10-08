@@ -1,5 +1,5 @@
 import numpy as np
-from etheria.core import _Tensor
+from etheria._eth import _Tensor
 
 
 # TODO: Implement internal tensor class in C++ and wrap it here

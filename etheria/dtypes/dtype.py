@@ -1,5 +1,5 @@
 from enum import Enum
-from etheria.core import _DType
+from etheria._eth import _DType
 
 class DType(Enum):
     FLOAT32 = _DType.FLOAT32
