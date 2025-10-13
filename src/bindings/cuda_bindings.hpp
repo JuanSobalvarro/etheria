@@ -7,7 +7,7 @@
 
 namespace py = pybind11;
 
-namespace eth::bindings
+namespace eth::bind
 {
 
 void bind_cuda(py::module_ &m)
@@ -22,4 +22,4 @@ void bind_cuda(py::module_ &m)
     m.def("set_cuda_device", &cuda::setDevice, "Set the active CUDA device", py::arg("device_id"));
 }
 
-} // namespace eth::bindings
+} // namespace eth::bind
