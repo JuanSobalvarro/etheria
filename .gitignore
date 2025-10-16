@@ -4,7 +4,6 @@
 *.o
 *.so
 *.a
-tests
 build
 data
 extern
