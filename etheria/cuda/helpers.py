@@ -1,4 +1,4 @@
-import etheria._eth as _eth
+import etheria._etheria as _eth
 
 def is_cuda_available() -> bool:
     """

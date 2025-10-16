@@ -70,10 +70,10 @@ def test_model():
 
 def main():
 
-    # test_cuda()
+    test_cuda()
     # test_tensor()
     # test_tensor_ops()
-    test_model()
+    # test_model()
 
 if __name__ == "__main__":
     main()

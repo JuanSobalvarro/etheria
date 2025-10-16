@@ -18,3 +18,5 @@ benchmark*.py
 *.obj
 *.exp
 *.lib
+
+./test*.py

@@ -5,28 +5,31 @@
 namespace eth::cuda 
 {
 
+// device management
+
 bool isCUDAAvailable() 
 {
     int deviceCount = 0;
-    cudaError_t error_id = cudaGetDeviceCount(&deviceCount);
-    return (error_id == cudaSuccess && deviceCount > 0);
+    CUDA_CALL(cudaGetDeviceCount(&deviceCount));
+    return (deviceCount > 0);
 }
 
 int numberCUDADevices() 
 {
     int deviceCount = 0;
-    cudaError_t error_id = cudaGetDeviceCount(&deviceCount);
-    return (error_id == cudaSuccess) ? deviceCount : 0;
+    CUDA_CALL(cudaGetDeviceCount(&deviceCount));
+    return deviceCount;
 }
 
 bool isCUDACompatible(int device_id) 
 {
     int deviceCount = 0;
-    if (cudaGetDeviceCount(&deviceCount) != cudaSuccess || device_id < 0 || device_id >= deviceCount)
+    CUDA_CALL(cudaGetDeviceCount(&deviceCount));
+    if (device_id < 0 || device_id >= deviceCount)
         return false;
 
     cudaDeviceProp deviceProp;
-    cudaGetDeviceProperties(&deviceProp, device_id);
+    CUDA_CALL(cudaGetDeviceProperties(&deviceProp, device_id));
     return deviceProp.major >= 3;
 }
 
@@ -34,52 +37,41 @@ std::vector<std::string> listCUDADevices()
 {
     std::vector<std::string> deviceNames;
     int deviceCount = 0;
-    if (cudaGetDeviceCount(&deviceCount) != cudaSuccess) return deviceNames;
+    CUDA_CALL(cudaGetDeviceCount(&deviceCount));
 
     for (int i = 0; i < deviceCount; ++i) {
         cudaDeviceProp deviceProp;
-        cudaGetDeviceProperties(&deviceProp, i);
+        CUDA_CALL(cudaGetDeviceProperties(&deviceProp, i));
         deviceNames.push_back(deviceProp.name);
     }
     return deviceNames;
 }
 
-void checkCuda(cudaError_t err, const char* msg) 
-{
-    if (err != cudaSuccess) {
-        if (msg) fprintf(stderr, "CUDA error (%s): %s\n", msg, cudaGetErrorString(err));
-        else fprintf(stderr, "CUDA error: %s\n", cudaGetErrorString(err));
-        std::abort();
-    }
-}
-
 void setDevice(int device_id) 
 {
     int device_count = 0;
-    cudaGetDeviceCount(&device_count);
+    CUDA_CALL(cudaGetDeviceCount(&device_count));
     if (device_id < 0 || device_id >= device_count)
         throw std::runtime_error("Invalid CUDA device ID");
-    cudaSetDevice(device_id);
+    CUDA_CALL(cudaSetDevice(device_id));
 }
 
 int currentCUDADevice() 
 {
     int device_id = -1;
-    cudaError_t err = cudaGetDevice(&device_id);
-    checkCuda(err, "Failed to get current CUDA device");
+    CUDA_CALL(cudaGetDevice(&device_id));
     return device_id;
 }
 
 std::string deviceDetails(int device_id) 
 {
     int device_count = 0;
-    cudaGetDeviceCount(&device_count);
+    CUDA_CALL(cudaGetDeviceCount(&device_count));
     if (device_id < 0 || device_id >= device_count)
         throw std::runtime_error("Invalid CUDA device ID");
 
     cudaDeviceProp deviceProp;
-    cudaError_t err = cudaGetDeviceProperties(&deviceProp, device_id);
-    checkCuda(err, "Failed to get device properties");
+    CUDA_CALL(cudaGetDeviceProperties(&deviceProp, device_id));
 
     char details[1024];
     snprintf(details, sizeof(details),
@@ -103,6 +95,32 @@ std::string deviceDetails(int device_id)
              deviceProp.maxGridSize[0], deviceProp.maxGridSize[1], deviceProp.maxGridSize[2]); // 9
 
     return std::string(details);
+}
+
+// memory management
+
+// allocate memory on current cuda device
+void allocate_device_memory(void** dev_ptr, size_t size) 
+{
+    CUDA_CALL(cudaMalloc(dev_ptr, size));
+}
+
+// free memory on current cuda device
+void free_device_memory(void* dev_ptr) 
+{
+    CUDA_CALL(cudaFree(dev_ptr));
+}
+
+// copy memory between host and CURRENT device
+void copy_to_device(void* dest, const void* src, size_t size) 
+{
+    CUDA_CALL(cudaMemcpy(dest, src, size, cudaMemcpyHostToDevice));
+}
+
+// copy memory between CURRENT device and host
+void copy_to_host(void* dest, const void* src, size_t size) 
+{
+    CUDA_CALL(cudaMemcpy(dest, src, size, cudaMemcpyDeviceToHost));
 }
 
 } // namespace eth::cuda

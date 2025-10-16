@@ -3,3 +3,9 @@ https://www.philadelphia.edu.jo/academics/qhamarsheh/uploads/Lecture%208%20-Supe
 https://github.com/pkestene/pybind11-cuda
 
 https://galaxy.agh.edu.pl/~vlsi/AI/backp_t_en/backprop.html
+
+
+# references
+
+https://ieeexplore.ieee.org/abstract/document/8884203
+

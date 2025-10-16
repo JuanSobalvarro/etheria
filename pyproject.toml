@@ -1,16 +1,21 @@
+[build-system]
+requires = ["setuptools>=80.9.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "neuralfromscratch"
-version = "0.1.0"
-description = "Add your description here"
+name = "etheria"
+version = "0.0.1-alpha"
+description = "Etheria MLP library for Edge AI applications"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
-    "matplotlib>=3.10.6",
-    "numpy>=2.3.2",
-    "pybind11>=3.0.1",
-    "pybind11-stubgen>=2.5.5",
-    "scikit-learn>=1.7.1",
-    "tensorflow>=2.20.0",
-    "torch>=2.8.0",
-    "torchvision>=0.23.0",
+]
+authors = [
+    {name = "Juan Sobalvarro", email = "sobalvarrog.juans@gmail.com"}
+]
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: Microsoft :: Windows",
+    "License :: OSI Approved :: MIT License"
 ]

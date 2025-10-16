@@ -1,15 +1,12 @@
-from etheria._etheria.cuda import (
+from ._etheria.cuda import (
     is_cuda_available,
     number_cuda_devices,
     list_cuda_devices,
-    set_cuda_device,
     current_cuda_device,
     device_details,
+    set_cuda_device,
 )
 
-from etheria._etheria.tensor import (
+from ._etheria.tensor import (
     Tensor,
-    add,
-    matmul,
-    activation,
 )
