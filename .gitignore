@@ -20,3 +20,6 @@ benchmark*.py
 *.lib
 
 ./test*.py
+
+# Distribution / packaging
+etheria.egg-info

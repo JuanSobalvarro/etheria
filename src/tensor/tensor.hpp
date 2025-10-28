@@ -1,62 +1,55 @@
+/*
+* Higher level Tensor class built on top of ITensor
+* which provides tensor math operations.
+*/
 #pragma once
 
-#include <vector>
-#include "cuda/cuda_helper.cuh"
+#include "itensor.hpp"
 
 
 namespace eth
 {
 
 // Tensor class for multidimensional arrays of float data
-class Tensor
+class Tensor : public ITensor
 {
 public:
-    Tensor();
-    Tensor(std::vector<int> shape);
-    Tensor(std::vector<int> shape, float* data);
-    
-    // copy constructor
-    Tensor(const Tensor& other);
-    // move constructor
-    Tensor(Tensor&& other) noexcept;
+    // TODO: implement automatic differentiation support we only store a flag for now
+    bool requires_grad = false; // flag for automatic differentiation
 
-    ~Tensor();
-
-    float get(const std::vector<int>& indices) const;
-    void set(const std::vector<int>& indices, float value);
-
-    const std::vector<int>& get_shape() const;
-    int get_num_elements() const;
-
-    int get_current_device_id() const;
-
-    // device management
-    void to_cpu();
-    void to_gpu(int device_id = 0);
-
-    // inplace operations
-    void add(const Tensor& other);
-    void multiply(const Tensor& other);
+    Tensor(std::vector<int> shape, bool requires_grad);
+    Tensor(float value, bool requires_grad); // rank 0 tensor (scalar)
+    Tensor(std::vector<float> data, bool requires_grad); // infers shape as 1D tensor, tensor of rank 1 (vector)
+    Tensor(std::vector<float> data, std::vector<int> shape, bool requires_grad); // tensor with rank > 1
 
     // copy operations
+    Tensor(const Tensor& other);
+    Tensor& operator=(const Tensor& other);
+
+    // move operations
+    Tensor(Tensor&& other) noexcept;
+    Tensor& operator=(Tensor&& other) noexcept;
+
+    // math operations CPU side only for now
+    Tensor add(const Tensor& other) const;
+    Tensor multiply(const Tensor& other) const; // element-wise multiplication
+    Tensor outer_product(const Tensor& other) const; // aka tensor product 
+    Tensor dot_product(const Tensor& other) const; // tensor dot product
+    Tensor transpose(const std::vector<int>& axes) const; // permute dimensions
+    Tensor contraction(const std::vector<std::pair<int, int>>& axes) const; // tensor contraction along specified axes
 
 private:
-    std::vector<int> shape;
-    float* data;
-    int device_id; // cpu = -1, gpu >= 0
-    int num_elements;
-    // why owns data? because if we pass by pointer we do not "own" that data so the freeing does not correspond
-    // to tensor object
-    bool owns_data;
-
-    void allocate_memory();
-    void free_memory();
-
-    // since the data is flattened we need to calculate the index given the vector access
-    int calculate_index(const std::vector<int>& indices) const;
-
-    void set_value_at_flat_index(int index, float value);
-    float get_value_at_flat_index(int index) const;
+    // Increment multi-dimensional index "odometer-style"
+    static bool next_index(std::vector<int>& idx, const std::vector<int>& shape)
+    {
+        for (int i = (int)idx.size() - 1; i >= 0; --i) {
+            idx[i]++;
+            if (idx[i] < shape[i]) return true;
+            idx[i] = 0;
+        }
+        return false; // finished all combinations
+    }
 };
 
+//
 } // namespace eth

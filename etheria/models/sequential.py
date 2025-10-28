@@ -3,7 +3,7 @@ from etheria.models.layers import Layer
 from etheria.models.base import BaseModel
 from etheria.models.types import ModelType
 from etheria.activation import ActivationFunction, do_init
-from etheria.tensor import Tensor, add, matmul, activation
+from etheria.tensor import Tensor
 
 
 class SequentialModel(BaseModel):
@@ -68,7 +68,7 @@ class SequentialModel(BaseModel):
             # forward pass
 
 
-    def predict(self, X: Union[List[List[float]], Tensor]) -> List[Tensor]:
+    def predict(self, X: Tensor) -> List[Tensor]:
         """
         Realizes a forward pass over a batch of inputs through the network to generate predictions.
         This can be done given an X input of shape (num_samples, input_shape...)
@@ -79,35 +79,17 @@ class SequentialModel(BaseModel):
             Z_l = W_l * A_(l-1) + b_l
             A_l = activation(Z_l)
         """
-        if not isinstance(X, Tensor):
-            X = Tensor(shape=(len(X), len(X[0])), data=X)
-
-        print(f"Input: {X}")
-        print(f"Current weights: {self.weights}")
-        print(f"Current biases: {self.biases}")
+        batch_size = X.shape[0]
+        inputs = X
 
         outputs = []
-        for batch in X:
-            A = batch.as_tensor  # shape (input_features,)
-            
-            # promote to column if 1D
-            if len(A.shape) == 1:
-                A = Tensor(shape=(A.shape[0], 1), data=A.data)
-            
-            for i, layer in enumerate(self.layers):
-                # matrix multiplication W * A
-                Z = matmul(self.weights[i], A)
-                Z = add(Z, self.biases[i])
-                print(f"Layer {i}: Z (pre-activation) = {Z}")
-                A = activation(Z, layer.activation.value)
-
-                # flatten column back to vector for next layer
-                if A.shape[1] == 1:
-                    A = Tensor(shape=(A.shape[0],), data=[A[j,0] for j in range(A.shape[0])])
-            
+        for i, layer in enumerate(self.layers):
+            Z = matmul(self.weights[i], inputs)
+            Z = add(Z, self.biases[i])
+            A = activation(Z, layer.activation.value)
             outputs.append(A)
+            inputs = A
 
-        
         return outputs
 
     def evaluate(self, X, y, stats: List[str]) -> dict:

@@ -1,281 +1,151 @@
-#include "tensor/tensor.hpp"
+#include "tensor.hpp"
 
 namespace eth
 {
-Tensor::Tensor() 
-: shape({}), data(nullptr), device_id(-1), num_elements(0), owns_data(true) 
+
+Tensor::Tensor(std::vector<int> shape, bool requires_grad)
+    : ITensor(shape), requires_grad(requires_grad)
+{
+}
+Tensor::Tensor(float value, bool requires_grad)
+    : ITensor(value), requires_grad(requires_grad)
+{
+}
+Tensor::Tensor(std::vector<float> data, bool requires_grad)
+    : ITensor(data), requires_grad(requires_grad)
+{
+}
+Tensor::Tensor(std::vector<float> data, std::vector<int> shape, bool requires_grad)
+    : ITensor(data, shape), requires_grad(requires_grad)
+{
+}
+
+// copy operations
+Tensor::Tensor(const Tensor& other) 
+    : ITensor(other), requires_grad(other.requires_grad) \
 {}
 
-Tensor::Tensor(std::vector<int> shape) : shape(shape), data(nullptr), device_id(-1), owns_data(true)
+Tensor& Tensor::operator=(const Tensor& other) 
 {
-    num_elements = 1;
-    // since the size of the data can be define by its dimensions (eg. 3(first dim) x 4 (second dim) = 12 elements)
-    for (int dim : shape) 
-    {
-        num_elements *= dim;
-    }
-
-    allocate_memory();
+    ITensor::operator=(other);
+    requires_grad = other.requires_grad;
+    return *this;
 }
 
-Tensor::Tensor(std::vector<int> shape, float* data) 
-: shape(shape), data(data), device_id(-1), owns_data(false)
-{
-    num_elements = 1;
-    for (int dim : shape) 
-    {
-        num_elements *= dim;
-    }
-    // we assume that the user provides valid data with the correct number of elements
-    // and that the data is already allocated
-    // we do not allocate memory in this constructor
-}
-
-Tensor::Tensor(const Tensor& other) 
-: shape(other.shape), device_id(other.device_id), num_elements(other.num_elements), owns_data
-(other.owns_data)
-{
-    if (other.data && owns_data) 
-    {
-        allocate_memory();
-        std::copy(other.data, other.data + num_elements, data);
-    } 
-    else 
-    {
-        data = other.data; // shallow copy if we don't own the data
-    }
-}
-
+// move operations
 Tensor::Tensor(Tensor&& other) noexcept
-: shape(std::move(other.shape)), data(other.data), device_id(other.device_id), num_elements(other.num_elements), owns_data(other.owns_data)
+    : ITensor(std::move(other)), requires_grad(other.requires_grad)
 {
-    other.data = nullptr; // leave other in a valid state
-    other.num_elements = 0;
-    other.device_id = -1;
-    other.owns_data = false;
 }
 
-Tensor::~Tensor() 
+Tensor& Tensor::operator=(Tensor&& other) noexcept
 {
-    free_memory();
-}
-
-float Tensor::get(const std::vector<int>& indices) const 
-{
-    int flat_index = calculate_index(indices);
-    return get_value_at_flat_index(flat_index);
-}
-
-void Tensor::set(const std::vector<int>& indices, float value) 
-{
-    int flat_index = calculate_index(indices);
-    set_value_at_flat_index(flat_index, value);
-}
-
-const std::vector<int>& Tensor::get_shape() const 
-{
-    return shape;
-}
-
-int Tensor::get_num_elements() const 
-{
-    return num_elements;
-}
-
-int Tensor::get_current_device_id() const 
-{
-    return device_id;
-}
-
-void Tensor::to_cpu() 
-{
-    if (device_id == -1) 
-        return; // already on CPU
-
-    if (!owns_data)
-        throw std::runtime_error("Cannot move to CPU: Tensor does not own its data.");
-
-    float* new_data = new float[num_elements];
-    cuda::copy_to_host(new_data, data, num_elements * sizeof(float));
-    // free old data
-    free_memory();
-    data = new_data;
-    device_id = -1;
-}
-
-void Tensor::to_gpu(int device_id_) 
-{
-    if (device_id == device_id_) 
-        return; // already on the desired GPU
-
-    // some overhead checks
-    if (!cuda::isCUDAAvailable())
-        throw std::runtime_error("CUDA is not available.");
-
-    if (!cuda::isCUDACompatible(device_id_))
-        throw std::runtime_error("The specified GPU device is not compatible.");
-
-    if (!owns_data)
-        throw std::runtime_error("Cannot move to GPU: Tensor does not own its data.");
-
-    if (device_id_ < 0)
-        throw std::runtime_error("Invalid device ID. Must be >= 0 for GPU.");
-
-    float* new_data = nullptr;
-    cuda::allocate_device_memory((void**)&new_data, num_elements * sizeof(float));
-    
-    // first lets not worry about going from one gpu to another gpu
-    // we will just copy from cpu to gpu
-    if (device_id != -1)
-        throw std::runtime_error("Direct GPU to GPU transfer not implemented. Move to CPU first.");
-
-    cuda::copy_to_device(new_data, data, num_elements * sizeof(float));
-    // free old data
-    free_memory();
-
-    data = new_data;
-    device_id = device_id_;
-}
-
-// Inplace addition
-void Tensor::add(const Tensor& other) 
-{
-    if (shape != other.shape)
-        throw std::runtime_error("Shape mismatch for addition.");
-
-    if (device_id != other.device_id)
-        throw std::runtime_error("Device mismatch for addition.");
-
-    if (device_id == -1) 
+    if (this != &other)
     {
-        // CPU addition
-        for (int i = 0; i < num_elements; ++i) 
-        {
-            data[i] += other.data[i];
-        }
-    } 
-    else 
-    {
-        // GPU addition
-        // For simplicity, we will not implement GPU kernel here
-        throw std::runtime_error("GPU addition not implemented.");
+        ITensor::operator=(std::move(other));
+        requires_grad = other.requires_grad;
     }
+    return *this;
 }
 
-// Inplace multiplication
-void Tensor::multiply(const Tensor& other) 
+Tensor Tensor::add(const Tensor& other) const
 {
-    if (shape != other.shape)
-        throw std::runtime_error("Shape mismatch for multiplication.");
-
-    if (device_id != other.device_id)
-        throw std::runtime_error("Device mismatch for multiplication.");
-
-    if (device_id == -1) 
+    // For an add operation the both tensors must have the same shape
+    if (get_shape() != other.get_shape())
     {
-        // CPU multiplication
-        for (int i = 0; i < num_elements; ++i) 
-        {
-            data[i] *= other.data[i];
-        }
-    } 
-    else 
-    {
-        // GPU multiplication
-        // For simplicity, we will not implement GPU kernel here
-        throw std::runtime_error("GPU multiplication not implemented.");
+        throw std::invalid_argument("Incompatible tensor shapes");
     }
+
+    Tensor result(get_shape(), requires_grad || other.requires_grad);
+    for (size_t i = 0; i < size(); ++i)
+    {
+        float sum = get(i) + other.get(i);
+        result.set(i, sum);
+    }
+    return result;
 }
 
-// Private methods
-
-void Tensor::allocate_memory() 
+Tensor Tensor::multiply(const Tensor& other) const
 {
-    if (owns_data && !data) 
+    // For an element-wise multiplication operation the both tensors must have the same shape
+    if (get_shape() != other.get_shape())
     {
-        if (device_id == -1) 
+        throw std::invalid_argument("Incompatible tensor shapes");
+    }
+
+    Tensor result(get_shape(), requires_grad || other.requires_grad);
+    for (size_t i = 0; i < size(); ++i)
+    {
+        float prod = get(i) * other.get(i);
+        result.set(i, prod);
+    }
+    return result;
+}
+
+Tensor Tensor::outer_product(const Tensor& other) const
+{
+    const std::vector<int>& shape_a = get_shape();
+    const std::vector<int>& shape_b = other.get_shape();
+
+    // New tensor shape is concatenation of both shapes
+    std::vector<int> new_shape = shape_a;
+    new_shape.insert(new_shape.end(), shape_b.begin(), shape_b.end());
+
+    Tensor result(new_shape, requires_grad || other.requires_grad);
+
+    std::vector<int> idx_a(shape_a.size(), 0);
+    do {
+        std::vector<int> idx_b(shape_b.size(), 0);
+        do {
+            // Combined index for result tensor
+            std::vector<int> idx_result = idx_a;
+            idx_result.insert(idx_result.end(), idx_b.begin(), idx_b.end());
+
+            result.set(idx_result, get(idx_a) * other.get(idx_b));
+        } while (next_index(idx_b, shape_b));
+    } while (next_index(idx_a, shape_a));
+
+    return result;
+}
+
+// so dot product aka matrix multiplication AKA tensor contraction over last axis of first tensor and first axis of second tensor
+Tensor Tensor::dot_product(const Tensor& other) const
+{
+    // sanity shape for matrix
+    const std::vector<int>& shape_a = get_shape();
+    const std::vector<int>& shape_b = other.get_shape();
+    if (shape_a.size() != 2 || shape_b.size() != 2 || shape_a[1] != shape_b[0])
+    {
+        throw std::invalid_argument("Incompatible tensor shapes for dot product");
+    }
+
+    std::vector<int> result_shape = {shape_a[0], shape_b[1]};
+
+    Tensor result(result_shape, requires_grad || other.requires_grad);
+
+    for (int i = 0; i < shape_a[0]; ++i)
+    {
+        for (int j = 0; j < shape_b[1]; ++j)
         {
-            // Allocate on CPU
-            data = new float[num_elements];
-        } 
-        else 
-        {
-            // Allocate on GPU
-            cuda::allocate_device_memory((void**)&data, num_elements * sizeof(float));
+            float sum = 0.0f;
+            for (int k = 0; k < shape_a[1]; ++k)
+            {
+                sum += get({i, k}) * other.get({k, j});
+            }
+            result.set({i, j}, sum);
         }
     }
+    return result;
 }
 
-void Tensor::free_memory() 
+Tensor Tensor::transpose(const std::vector<int>& axes) const
 {
-    if (owns_data && data) 
-    {
-        if (device_id == -1) 
-        {
-            // Free CPU memory
-            delete[] data;
-        } 
-        else 
-        {
-            // Free GPU memory
-            cuda::free_device_memory(data);
-        }
-        data = nullptr;
-    }
+    throw std::runtime_error("Tensor::transpose not implemented yet.");
 }
 
-int Tensor::calculate_index(const std::vector<int>& indices) const
+Tensor Tensor::contraction(const std::vector<std::pair<int, int>>& axes) const
 {
-    if (indices.size() != shape.size())
-        throw std::runtime_error("Index dimensionality does not match the tensor shape.");
-
-    int flat_index = 0;
-    int stride = 1;
-    for (int i = shape.size() - 1; i >= 0; --i) 
-    {
-        if (indices[i] < 0 || indices[i] >= shape[i])
-            throw std::runtime_error("Index out of bounds.");
-        
-        flat_index += indices[i] * stride;
-        stride *= shape[i];
-    }
-    return flat_index;
-}
-
-void Tensor::set_value_at_flat_index(int index, float value) 
-{
-    if (index < 0 || index >= num_elements)
-        throw std::runtime_error("Flat index out of bounds.");
-
-    if (device_id == -1) 
-    {
-        data[index] = value;
-    } 
-    else 
-    {
-        // For simplicity, we will copy the value to host, set it, and copy back
-        float temp;
-        cuda::copy_to_host(&temp, data + index, sizeof(float));
-        temp = value;
-        cuda::copy_to_device(data + index, &temp, sizeof(float));
-    }
-}
-
-float Tensor::get_value_at_flat_index(int index) const 
-{
-    if (index < 0 || index >= num_elements)
-        throw std::runtime_error("Flat index out of bounds.");
-
-    if (device_id == -1) 
-    {
-        return data[index];
-    } 
-    else 
-    {
-        float temp;
-        cuda::copy_to_host(&temp, data + index, sizeof(float));
-        return temp;
-    }
+    throw std::runtime_error("Tensor::contract not implemented yet.");
 }
 
 //
