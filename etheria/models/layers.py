@@ -9,14 +9,7 @@ class Layer:
     def __init__(self, neurons: int, activation: Union[ActivationFunction, str], **kwargs):
         self.neurons: int = neurons
         # Normalize activation to an ActivationFunction enum
-        if isinstance(activation, str):
-            try:
-                activation = ActivationFunction(activation.lower())
-            except ValueError:
-                raise ValueError(f"Unknown activation function: {activation}")
-        elif not isinstance(activation, ActivationFunction):
-            raise TypeError(f"activation must be ActivationFunction or str, got {type(activation)}")
-        self.activation: ActivationFunction = activation
+        self.activation: ActivationFunction = ActivationFunction.from_value(activation)
         self.kwargs = kwargs
 
 class DenseLayer(Layer):

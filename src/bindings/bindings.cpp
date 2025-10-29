@@ -1,6 +1,7 @@
 #include <pybind11/pybind11.h>
 #include "cuda_bindings.hpp"
 #include "tensor_bindings.hpp"
+#include "activation_bindings.hpp"
 
 namespace py = pybind11;
 
@@ -15,4 +16,6 @@ PYBIND11_MODULE(_etheria, m) {
     py::module_ tensor_sub = m.def_submodule("tensor", "Tensor operations");
     eth::bind::bindTensor(tensor_sub);
 
+    py::module_ activation_sub = m.def_submodule("activation", "Activation functions");
+    eth::bind::bindActivation(activation_sub);
 }

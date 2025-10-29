@@ -10,3 +10,9 @@ from ._etheria.cuda import (
 from ._etheria.tensor import (
     Tensor,
 )
+
+from ._etheria.activation import (
+    ActivationFunction,
+    activation,
+    activation_derivative,
+)

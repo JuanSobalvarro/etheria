@@ -1,6 +1,7 @@
 from typing import Tuple, List, Sequence
 from etheria.models.layers import Layer
 from etheria.models.types import ModelType
+from etheria.tensor import Tensor
 
 
 class BaseModel:
@@ -32,7 +33,7 @@ class BaseModel:
         for i, layer in enumerate(self.layers):
             summary_str += f"  Layer {i + 1}: {layer} with {layer.neurons} neurons and {layer.activation} activation\n"
         return summary_str
-    
+
     def configure(self, learning_rate: float, optimizer: str, loss: str):
         """
         Configures the model with learning parameters.
@@ -41,11 +42,11 @@ class BaseModel:
         self.optimizer = optimizer
         self.loss = loss
     
-    def train(self, X, y, epochs: int, verbose: bool = False):
+    def train(self, X: Tensor, y: Tensor, epochs: int, verbose: bool = False):
         ...
 
-    def predict(self, X):
+    def predict(self, X: Tensor) -> Tensor:
         ...
 
-    def evaluate(self, X, y, stats: List[str]) -> dict:
-        ...        
+    def evaluate(self, X: Tensor, y: Tensor, stats: List[str]) -> dict:
+        ...

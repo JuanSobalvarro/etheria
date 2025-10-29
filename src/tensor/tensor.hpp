@@ -17,10 +17,10 @@ public:
     // TODO: implement automatic differentiation support we only store a flag for now
     bool requires_grad = false; // flag for automatic differentiation
 
-    Tensor(std::vector<int> shape, bool requires_grad);
-    Tensor(float value, bool requires_grad); // rank 0 tensor (scalar)
-    Tensor(std::vector<float> data, bool requires_grad); // infers shape as 1D tensor, tensor of rank 1 (vector)
-    Tensor(std::vector<float> data, std::vector<int> shape, bool requires_grad); // tensor with rank > 1
+    Tensor(std::vector<int> shape, bool requires_grad, int device_id = -1);
+    Tensor(float value, bool requires_grad, int device_id = -1); // rank 0 tensor (scalar)
+    Tensor(std::vector<float> data, bool requires_grad, int device_id = -1); // infers shape as 1D tensor, tensor of rank 1 (vector)
+    Tensor(std::vector<float> data, std::vector<int> shape, bool requires_grad, int device_id = -1); // tensor with rank > 1
 
     // copy operations
     Tensor(const Tensor& other);
@@ -30,13 +30,24 @@ public:
     Tensor(Tensor&& other) noexcept;
     Tensor& operator=(Tensor&& other) noexcept;
 
+    ~Tensor();
+
+    // getter that return sub tensor, essentially it returns the i-th tensor of rank n - 1 where n is the rank of this tensor
+    Tensor get_subtensor(size_t index) const;
+    Tensor get_subtensor(const std::vector<size_t> indices) const;
+
     // math operations CPU side only for now
     Tensor add(const Tensor& other) const;
+    Tensor add_scalar(const float scalar) const;
+    Tensor subtract(const Tensor& other) const;
     Tensor multiply(const Tensor& other) const; // element-wise multiplication
+    Tensor scalar_multiply(float scalar) const;
     Tensor outer_product(const Tensor& other) const; // aka tensor product 
     Tensor dot_product(const Tensor& other) const; // tensor dot product
     Tensor transpose(const std::vector<int>& axes) const; // permute dimensions
     Tensor contraction(const std::vector<std::pair<int, int>>& axes) const; // tensor contraction along specified axes
+
+    Tensor reshape(const std::vector<int>& new_shape) const; // reshape tensor
 
 private:
     // Increment multi-dimensional index "odometer-style"

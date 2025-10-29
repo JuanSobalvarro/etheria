@@ -23,7 +23,7 @@ def initialize_he(weights: Tensor, biases: Tensor, fan_in: int, fan_out: int):
 
     for i in range(weights.shape[0]):
         for j in range(weights.shape[1]):
-            weights[i][j] = np.random.randn() * stddev
+            weights[i, j] = np.random.randn() * stddev
 
     for i in range(biases.shape[0]):
         biases[i] = 0.0
@@ -46,7 +46,7 @@ def initialize_normal(weights: Tensor, biases: Tensor, fan_in: int, fan_out: int
 
     for i in range(weights.shape[0]):
         for j in range(weights.shape[1]):
-            weights[i][j] = np.random.randn() * stddev
+            weights[i, j] = np.random.randn() * stddev
 
     for i in range(biases.shape[0]):
         biases[i] = 0.0

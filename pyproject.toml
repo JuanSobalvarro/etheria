@@ -20,3 +20,11 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "License :: OSI Approved :: MIT License"
 ]
+
+[dependency-groups]
+dev = [
+    "etheria",
+]
+
+[tool.uv.sources]
+etheria = { workspace = true }

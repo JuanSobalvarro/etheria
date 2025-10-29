@@ -3,9 +3,21 @@
 namespace eth
 {
 
-ITensor::ITensor(std::vector<int> shape)
-    : shape(std::move(shape)), device_id(-1)
+// TODO: implement creation directly on GPU i am lazy right now
+ITensor::ITensor(std::vector<int> shape, int device_id)
+    : shape(std::move(shape)), device_id(device_id)
 {
+    // this should be handle automatically below but just in case we manually create a rank 0 tensor
+    if (this->shape.empty())
+    {
+        // rank 0 tensor (scalar)
+        data = new float[1];
+        num_elements = 1;
+        rank = 0;
+        return;
+    }
+
+
     // allocate data based on shape
     int num_elements = 1;
     for (int dim : this->shape)
@@ -14,26 +26,29 @@ ITensor::ITensor(std::vector<int> shape)
     }
     data = new float[num_elements];
     this->num_elements = num_elements;
+    this->rank = shape.size();
 }
 
-ITensor::ITensor(float value)
-    : shape({}), device_id(-1)
+ITensor::ITensor(float value, int device_id)
+    : shape({}), device_id(device_id)
 {
     data = new float[1];
     data[0] = value;
     num_elements = 1;
+    rank = 0;
 }
 
-ITensor::ITensor(std::vector<float> data)
-    : shape({static_cast<int>(data.size())}), device_id(-1)
+ITensor::ITensor(std::vector<float> data, int device_id)
+    : shape({static_cast<int>(data.size())}), device_id(device_id)
 {
     this->data = new float[data.size()];
     std::copy(data.begin(), data.end(), this->data);
     num_elements = static_cast<int>(data.size());
+    rank = 1;
 }
 
-ITensor::ITensor(std::vector<float> data, std::vector<int> shape)
-    : data(nullptr), shape(std::move(shape)), device_id(-1)
+ITensor::ITensor(std::vector<float> data, std::vector<int> shape, int device_id)
+    : data(nullptr), shape(std::move(shape)), device_id(device_id)
 {
     // sanity check if data is compatible with shape
     int expected_size = 1;
@@ -48,10 +63,12 @@ ITensor::ITensor(std::vector<float> data, std::vector<int> shape)
     this->data = new float[expected_size];
     std::copy(data.begin(), data.end(), this->data);
     num_elements = expected_size;
+    rank = this->shape.size();
 }
 
 ITensor::~ITensor()
 {
+    free_memory();
     delete[] data;
 }
 
@@ -72,6 +89,7 @@ ITensor& ITensor::operator=(const ITensor& other)
         shape = other.shape;
         num_elements = other.num_elements;
         device_id = other.device_id;
+        rank = other.rank;
 
         data = new float[num_elements];
         std::copy(other.data, other.data + num_elements, data);
@@ -84,6 +102,7 @@ ITensor::ITensor(ITensor&& other) noexcept
 {
     other.data = nullptr;
     other.num_elements = 0;
+    other.rank = 0;
 }
 
 ITensor& ITensor::operator=(ITensor&& other) noexcept
@@ -99,6 +118,7 @@ ITensor& ITensor::operator=(ITensor&& other) noexcept
 
         other.data = nullptr;
         other.num_elements = 0;
+        other.rank = 0;
     }
     return *this;
 }
@@ -141,6 +161,8 @@ void ITensor::move_to_gpu(int device_id_)
 
     if (device_id_ < 0)
         throw std::runtime_error("Invalid device ID. Must be >= 0 for GPU.");
+
+    cuda::setDevice(device_id_);
 
     float* new_data = nullptr;
     cuda::allocate_device_memory((void**)&new_data, num_elements * sizeof(float));
@@ -190,6 +212,8 @@ void ITensor::allocate_memory()
             num_elements *= dim;
         }
 
+        rank = shape.size();
+
         if (device_id == -1)
         {
             // Allocate on CPU
@@ -238,6 +262,11 @@ int ITensor::calculate_index(const std::vector<int>& indices) const
 const std::vector<int>& ITensor::get_shape() const
 {
     return shape;
+}
+
+const int ITensor::get_rank() const
+{
+    return rank;
 }
 
 int ITensor::size() const
