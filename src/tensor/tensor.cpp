@@ -62,7 +62,8 @@ Tensor Tensor::add(const Tensor& other) const
 
     if (other.get_rank() != this->get_rank())
     {
-        throw std::invalid_argument("Incompatible tensor ranks for addition");
+        throw std::invalid_argument("Incompatible tensor ranks for addition. Got ranks: " +
+            std::to_string(this->get_rank()) + " and " + std::to_string(other.get_rank()) + ")");
     }
 
     // For an add operation the both tensors must have the same shape

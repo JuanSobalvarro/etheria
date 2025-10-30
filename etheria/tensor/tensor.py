@@ -60,7 +60,7 @@ class Tensor:
         # Always return a Tensor
         return Tensor._from_ctensor(sub_ctensor)
 
-    def __setitem__(self, idx: Union[int, Tuple[int, ...]], value: float):
+    def __setitem__(self, idx: Union[int, Tuple[int, ...]], value: Union[float, "Tensor"]) -> None:
         if isinstance(idx, int):
             idx = (idx,)
         self._tensor.set_flat_multi(list(idx), value)
@@ -162,6 +162,10 @@ class Tensor:
     @property
     def shape(self) -> Tuple[int, ...]:
         return tuple(self._tensor.get_shape())
+    
+    @property
+    def rank(self) -> int:
+        return self._tensor.get_rank()
 
     def reshape(self, new_shape: Union[Tuple[int, ...], Sequence[int]]) -> "Tensor":
         return Tensor._from_ctensor(self._tensor.reshape(list(new_shape)))
@@ -211,4 +215,4 @@ class Tensor:
         elif len(self.shape) == 2:
             t_type = "Matriz"
 
-        return f"Tensor({t_type})(shape={self.shape} data={self.to_list()}) at device {self.device} at {hex(id(self))}"
+        return f"Tensor({t_type})(shape={self.shape} rank={self.rank} data={self.to_list()}) at device {self.device} at {hex(id(self))}"

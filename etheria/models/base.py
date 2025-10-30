@@ -42,10 +42,10 @@ class BaseModel:
         self.optimizer = optimizer
         self.loss = loss
     
-    def train(self, X: Tensor, y: Tensor, epochs: int, verbose: bool = False):
+    def train(self, inputs: Tensor, targets: Tensor, epochs: int, verbose: bool = False):
         ...
 
-    def predict(self, X: Tensor) -> Tensor:
+    def predict(self, inputs: Tensor) -> Tensor:
         ...
 
     def evaluate(self, X: Tensor, y: Tensor, stats: List[str]) -> dict:

@@ -1,6 +1,7 @@
 import etheria as eth
 from etheria.models.layers import Layer
 import time as t
+import argparse
 
 def test_cuda():
     print("========= CUDA TESTS =========")
@@ -13,6 +14,9 @@ def test_tensor_creation():
     print("========= TENSOR CREATION TESTS =========")
 
     # test scalar
+
+    print("--- Scalar Tensor Creation ---")
+
     itime = t.time()
     esc = eth.tensor.Tensor(data=3.14)
     etime = t.time()
@@ -32,33 +36,70 @@ def test_tensor_creation():
     # print("Scalar tensor esc_tensor created directly on GPU:", esc_tensor)
     # print(f"Time taken to create scalar tensor on gpu: {etime - itime} seconds")
 
-    # a = eth.tensor.Tensor(shape=[3, 4])
-    # print("Tensor a:", a)
-    # print("Tensor a shape:", a.shape)
-    # print("Tensor a size:", a.num_elements)
+    print("--- Vector Tensor Creation ---")
 
-    # b = eth.tensor.Tensor(shape=[4, 3])
-    # print("Tensor b:", b)
-    # print("Tensor b shape:", b.shape)
-    # print("Tensor b size:", b.num_elements)
+    itime = t.time()
+    vec = eth.tensor.Tensor(data=[1.0, 2.0, 3.0, 4.0], shape=(4,))
+    etime = t.time()
+    print("Vector tensor vec:", vec)
+    print(f"Time taken to create vector tensor: {etime - itime} seconds")
+
+    itime = t.time()
+    vec.to_gpu(0)
+    etime = t.time()
+    print("Vector tensor vec after moving to GPU:", vec)
+    print(f"Time taken to move vector tensor to gpu: {etime - itime} seconds")
+
+    print("--- Matrix Tensor Creation ---")
+    itime = t.time()
+    mat = eth.tensor.Tensor(data=[1.0, 2.0, 3.0, 4.0, 5.0, 6.0], shape=(2, 3))
+    etime = t.time()
+    print("Matrix tensor mat:", mat)
+    print(f"Time taken to create matrix tensor: {etime - itime} seconds")
+
+    itime = t.time()
+    mat.to_gpu(0)
+    etime = t.time()
+    print("Matrix tensor mat after moving to GPU:", mat)
+    print(f"Time taken to move matrix tensor to gpu: {etime - itime} seconds")
+
+    print("--- 3D Tensor Creation ---")
+    itime = t.time()
+    tensor3d = eth.tensor.Tensor(data=list(range(24)), shape=(2, 3, 4))
+    etime = t.time()
+    print("3D tensor tensor3d:", tensor3d)
+    print(f"Time taken to create 3D tensor: {etime - itime} seconds")
+
+    itime = t.time()
+    tensor3d.to_gpu(0)
+    etime = t.time()
+    print("3D tensor tensor3d after moving to GPU:", tensor3d)
+    print(f"Time taken to move 3D tensor to gpu: {etime - itime} seconds")
+
 
 def test_tensor_sum():
     print("========= TENSOR SUM TESTS =========")
 
-    a = eth.tensor.Tensor(shape=[2, 2])
-    b = eth.tensor.Tensor(shape=[2, 2])
+    random_data_a = [float(i) for i in range(4)]
+    random_data_b = [float(i * 2) for i in range(4)]
+
+    a = eth.tensor.Tensor(data = random_data_a, shape=[2, 2])
+    b = eth.tensor.Tensor(data = random_data_b, shape=[2, 2])
     c = a + b
+
+    print("Tensor a:", a)
+    print("Tensor b:", b)
 
     print("Expected result shape: (2, 2)")
     print("Actual result shape:", c.shape)
     print("Expected result size: 4")
     print("Actual result size:", c.num_elements)
 
+    # check values
     for i in range(2):
         for j in range(2):
-            expected_value = a[i][j] + b[i][j]
-            actual_value = c[i][j]
-            print(f"c[{i}, {j}] = {actual_value} (expected: {expected_value})")
+            print(f"c[{i}, {j}] = {c[i, j].to_list()} (expected: {a[i, j].to_list()} + {b[i, j].to_list()} = {(a[i, j] + b[i, j]).to_list()})")
+
 
 def test_tensor_outer_product():
     print("========= TENSOR OUTER PRODUCT TESTS =========")
@@ -242,36 +283,54 @@ def test_model_training():
 
     # Corresponding target values
     y = [
-        0.0,
-        1.0,
-        1.0,
-        0.0
+        [0.0],
+        [1.0],
+        [1.0],
+        [0.0]
     ]
 
     X = eth.tensor.Tensor(data=X, shape=(4, 2))
 
-    y = eth.tensor.Tensor(data=y, shape=(4,))
+    y = eth.tensor.Tensor(data=y, shape=(4,1))
+
+    print(f"Target values: {y}")
 
     model.train(X, y, epochs=10, learning_rate=0.001, verbose=True)
 
     # Evaluate the model
     predictions = model.predict(X)
     print("Final Predictions after training:")
-    for i in range(len(predictions)):
+    for i in range(predictions.rank):
         print(f"Input: {X[i].to_list()}, Predicted: {predictions[i].to_list()[0]}, Target: {y[i]}")
 
-def main():
+funcs = {
+    0: test_cuda,
+    1: test_tensor_creation,
+    2: test_tensor_sum,
+    3: test_tensor_outer_product,
+    4: test_tensor_population,
+    5: test_tensor_dot_product,
+    6: test_model_creation,
+    7: test_activation_functions,
+    8: test_model_prediction,
+    9: test_model_training
+}
 
-    # test_cuda()
-    test_tensor_creation()
-    # test_tensor_sum()
-    # test_tensor_outer_product()
-    # test_tensor_population()
-    # test_tensor_dot_product()
-    # test_model_creation()
-    # test_activation_functions()
-    # test_model_prediction()
-    # test_model_training()
+def main():
+    parser = argparse.ArgumentParser(description="Run Etheria tests.")
+    parser.add_argument("--test", type=int, default=0, help="Test number to run (0 for all tests)")
+    args = parser.parse_args()
+
+    if args.test == 0:
+        for i in range(len(funcs)):
+            print(f"\nRunning test {i}:")
+            funcs[i]()
+    else:
+        if args.test in funcs:
+            print(f"\nRunning test {args.test}:")
+            funcs[args.test]()
+        else:
+            print(f"Test {args.test} not found.")
 
 if __name__ == "__main__":
     main()

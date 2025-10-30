@@ -4,49 +4,34 @@ namespace eth
 {
 
 // TODO: implement creation directly on GPU i am lazy right now
+
+// tensor of given shape (automatically initializes to zeros)
 ITensor::ITensor(std::vector<int> shape, int device_id)
     : shape(std::move(shape)), device_id(device_id)
 {
-    // this should be handle automatically below but just in case we manually create a rank 0 tensor
-    if (this->shape.empty())
-    {
-        // rank 0 tensor (scalar)
-        data = new float[1];
-        num_elements = 1;
-        rank = 0;
-        return;
-    }
-
-
-    // allocate data based on shape
-    int num_elements = 1;
-    for (int dim : this->shape)
-    {
-        num_elements *= dim;
-    }
-    data = new float[num_elements];
-    this->num_elements = num_elements;
-    this->rank = shape.size();
+    allocate_memory();
+    // initialize data to zeros
+    std::fill(data, data + num_elements, 0.0f);
 }
 
+// tensor of rank 0 (scalar)
 ITensor::ITensor(float value, int device_id)
     : shape({}), device_id(device_id)
 {
     data = new float[1];
     data[0] = value;
     num_elements = 1;
-    rank = 0;
 }
 
+// infers shape as 1D tensor, tensor of rank 1 (vector)
 ITensor::ITensor(std::vector<float> data, int device_id)
     : shape({static_cast<int>(data.size())}), device_id(device_id)
 {
-    this->data = new float[data.size()];
+    allocate_memory();
     std::copy(data.begin(), data.end(), this->data);
-    num_elements = static_cast<int>(data.size());
-    rank = 1;
 }
 
+// tensor with rank > 1 data is flattened
 ITensor::ITensor(std::vector<float> data, std::vector<int> shape, int device_id)
     : data(nullptr), shape(std::move(shape)), device_id(device_id)
 {
@@ -60,16 +45,13 @@ ITensor::ITensor(std::vector<float> data, std::vector<int> shape, int device_id)
     {
         throw std::invalid_argument("Data size does not match shape dimensions.");
     }
-    this->data = new float[expected_size];
+    allocate_memory();
     std::copy(data.begin(), data.end(), this->data);
-    num_elements = expected_size;
-    rank = this->shape.size();
 }
 
 ITensor::~ITensor()
 {
     free_memory();
-    delete[] data;
 }
 
 // copy operations
@@ -89,7 +71,6 @@ ITensor& ITensor::operator=(const ITensor& other)
         shape = other.shape;
         num_elements = other.num_elements;
         device_id = other.device_id;
-        rank = other.rank;
 
         data = new float[num_elements];
         std::copy(other.data, other.data + num_elements, data);
@@ -102,7 +83,6 @@ ITensor::ITensor(ITensor&& other) noexcept
 {
     other.data = nullptr;
     other.num_elements = 0;
-    other.rank = 0;
 }
 
 ITensor& ITensor::operator=(ITensor&& other) noexcept
@@ -118,7 +98,6 @@ ITensor& ITensor::operator=(ITensor&& other) noexcept
 
         other.data = nullptr;
         other.num_elements = 0;
-        other.rank = 0;
     }
     return *this;
 }
@@ -201,30 +180,50 @@ int ITensor::current_device() const
 
 void ITensor::allocate_memory()
 {
-    // ensure any existing memory is freed first
-    free_memory();
+    
+    // ensure any existing memory is freed first,is that necessary? 
+    // try
+    // {
+    //     free_memory();
+    // }
+    // catch (const std::exception& e)
+    // {
+    //     throw std::runtime_error("Failed to free existing memory before allocation: " + std::string(e.what()));
+    // }
 
+    if (shape.empty())
+    {
+        num_elements = 1;
+        data = new float[1];
+        return; // nothing to allocate for scalar
+    }
+
+    int elements = 1;
+    for (int dim : shape)
+    {
+        elements *= dim;
+    }
+
+    this->num_elements = elements;
+
+    if (device_id == -1)
+    {
+        // Allocate on CPU
+        data = new float[elements];
+    }
+    else
+    {
+        // Allocate on GPU
+        cuda::allocate_device_memory((void**)&data, elements * sizeof(float));
+    }
+
+    // validate data is allocated
     if (!data)
     {
-        int num_elements = 1;
-        for (int dim : shape)
-        {
-            num_elements *= dim;
-        }
-
-        rank = shape.size();
-
-        if (device_id == -1)
-        {
-            // Allocate on CPU
-            data = new float[num_elements];
-        }
-        else
-        {
-            // Allocate on GPU
-            cuda::allocate_device_memory((void**)&data, num_elements * sizeof(float));
-        }
+        throw std::runtime_error("Memory allocation failed.");
     }
+
+    this->num_elements = elements;
 }
 
 void ITensor::free_memory()
@@ -266,7 +265,7 @@ const std::vector<int>& ITensor::get_shape() const
 
 const int ITensor::get_rank() const
 {
-    return rank;
+    return shape.size();
 }
 
 int ITensor::size() const

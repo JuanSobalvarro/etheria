@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <memory>
+#include <stdexcept>
 
 #include "cuda/cuda_helper.cuh"
 
@@ -60,7 +61,6 @@ private:
     // a shape of {10} means a rank 1 tensor (vector) of size 10
     // and a shape of {} means a rank 0 tensor (scalar)
     std::vector<int> shape;
-    int rank; // rank this is shape.size() so redundant but convenient
     int num_elements; // total number of elements as 1D flattened array
 
     int device_id; // cpu = -1, gpu >= 0
